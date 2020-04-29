@@ -16,9 +16,7 @@ var (
 	errorLackOfMethod = fmt.Errorf("wasm execute: lack of method name")
 )
 
-var instances = make(map[string]wasmer.Instance)
-
-func getInstance(code []byte, imports *wasmer.Imports) (wasmer.Instance, error) {
+func getInstance(code []byte, imports *wasmer.Imports, instances map[string]wasmer.Instance) (wasmer.Instance, error) {
 	ret := sha256.Sum256(code)
 	v, ok := instances[string(ret[:])]
 	if ok {
@@ -53,7 +51,7 @@ type Contract struct {
 }
 
 // New creates a wasm vm instance
-func New(contractByte []byte, imports *wasmer.Imports) (*Wasm, error) {
+func New(contractByte []byte, imports *wasmer.Imports, instances map[string]wasmer.Instance) (*Wasm, error) {
 	wasm := &Wasm{}
 
 	contract := &Contract{}
@@ -65,7 +63,7 @@ func New(contractByte []byte, imports *wasmer.Imports) (*Wasm, error) {
 		return wasm, fmt.Errorf("contract byte is empty")
 	}
 
-	instance, err := getInstance(contract.Code, imports)
+	instance, err := getInstance(contract.Code, imports, instances)
 	if err != nil {
 		return nil, err
 	}
