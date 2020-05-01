@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
-	"github.com/meshplus/bitxhub-kit/network/pb"
+	network_pb "github.com/meshplus/bitxhub-kit/network/pb"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
@@ -99,7 +99,7 @@ func (p2p *P2P) SetMessageHandler(handler MessageHandler) {
 }
 
 // AsyncSend message to peer with specific id.
-func (p2p *P2P) AsyncSend(addr *peer.AddrInfo, msg *pb.Message) error {
+func (p2p *P2P) AsyncSend(addr *peer.AddrInfo, msg *network_pb.Message) error {
 	s, err := p2p.streamMng.get(addr.ID)
 	if err != nil {
 		return fmt.Errorf("get stream: %w", err)
@@ -113,11 +113,11 @@ func (p2p *P2P) AsyncSend(addr *peer.AddrInfo, msg *pb.Message) error {
 	return nil
 }
 
-func (p2p *P2P) SendWithStream(s network.Stream, msg *pb.Message) error {
+func (p2p *P2P) SendWithStream(s network.Stream, msg *network_pb.Message) error {
 	return p2p.send(s, msg)
 }
 
-func (p2p *P2P) Send(addr *peer.AddrInfo, msg *pb.Message) (*pb.Message, error) {
+func (p2p *P2P) Send(addr *peer.AddrInfo, msg *network_pb.Message) (*network_pb.Message, error) {
 	s, err := p2p.streamMng.get(addr.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get stream: %w", err)
@@ -136,7 +136,7 @@ func (p2p *P2P) Send(addr *peer.AddrInfo, msg *pb.Message) (*pb.Message, error) 
 	return recvMsg, nil
 }
 
-func (p2p *P2P) Broadcast(ids []*peer.AddrInfo, msg *pb.Message) error {
+func (p2p *P2P) Broadcast(ids []*peer.AddrInfo, msg *network_pb.Message) error {
 	for _, id := range ids {
 		if err := p2p.AsyncSend(id, msg); err != nil {
 			p2p.logger.WithFields(logrus.Fields{

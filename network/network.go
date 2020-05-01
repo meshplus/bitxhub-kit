@@ -3,7 +3,7 @@ package network
 import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/meshplus/bitxhub-kit/network/pb"
+	network_pb "github.com/meshplus/bitxhub-kit/network/pb"
 )
 
 type ConnectCallback func(*peer.AddrInfo) error
@@ -30,14 +30,14 @@ type Network interface {
 	SetMessageHandler(MessageHandler)
 
 	// AsyncSend sends message to peer with peer info.
-	AsyncSend(*peer.AddrInfo, *pb.Message) error
+	AsyncSend(*peer.AddrInfo, *network_pb.Message) error
 
 	// Send message using existed stream
-	SendWithStream(network.Stream, *pb.Message) error
+	SendWithStream(network.Stream, *network_pb.Message) error
 
 	// Send sends message waiting response
-	Send(*peer.AddrInfo, *pb.Message) (*pb.Message, error)
+	Send(*peer.AddrInfo, *network_pb.Message) (*network_pb.Message, error)
 
 	// Broadcast message to all node
-	Broadcast([]*peer.AddrInfo, *pb.Message) error
+	Broadcast([]*peer.AddrInfo, *network_pb.Message) error
 }

@@ -8,7 +8,7 @@ import (
 
 func TestHash_String(t *testing.T) {
 	b := Bytes2Hash([]byte("0002288331189898"))
-	require.Equal(t, "000000...383938", b.String())
+	require.Equal(t, "000000...383938", b.ShortString())
 }
 
 func TestString2Hash(t *testing.T) {
