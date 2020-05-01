@@ -8,7 +8,7 @@ import (
 
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/meshplus/bitxhub-kit/network/pb"
+	network_pb "github.com/meshplus/bitxhub-kit/network/pb"
 )
 
 // handle newly connected stream
@@ -21,7 +21,7 @@ func (p2p *P2P) handleNewStream(s network.Stream) {
 	reader := ggio.NewDelimitedReader(s, network.MessageSizeMax)
 
 	for {
-		msg := &pb.Message{}
+		msg := &network_pb.Message{}
 		if err := reader.ReadMsg(msg); err != nil {
 			if err != io.EOF {
 				if err := s.Reset(); err != nil {
@@ -39,13 +39,13 @@ func (p2p *P2P) handleNewStream(s network.Stream) {
 }
 
 // waitMsg wait the incoming messages within time duration.
-func waitMsg(stream io.Reader, timeout time.Duration) *pb.Message {
+func waitMsg(stream io.Reader, timeout time.Duration) *network_pb.Message {
 	reader := ggio.NewDelimitedReader(stream, network.MessageSizeMax)
 
-	ch := make(chan *pb.Message)
+	ch := make(chan *network_pb.Message)
 
 	go func() {
-		msg := &pb.Message{}
+		msg := &network_pb.Message{}
 		if err := reader.ReadMsg(msg); err == nil {
 			ch <- msg
 		} else {
@@ -65,7 +65,7 @@ func waitMsg(stream io.Reader, timeout time.Duration) *pb.Message {
 	}
 }
 
-func (p2p *P2P) send(s network.Stream, msg *pb.Message) error {
+func (p2p *P2P) send(s network.Stream, msg *network_pb.Message) error {
 	deadline := time.Now().Add(sendTimeout)
 
 	if err := s.SetWriteDeadline(deadline); err != nil {

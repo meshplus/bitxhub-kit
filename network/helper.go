@@ -1,11 +1,11 @@
 package network
 
 import (
-	"github.com/meshplus/bitxhub-kit/network/pb"
+	network_pb "github.com/meshplus/bitxhub-kit/network/pb"
 )
 
-func Message(data []byte) *pb.Message {
-	return &pb.Message{
+func Message(data []byte) *network_pb.Message {
+	return &network_pb.Message{
 		Data: data,
 	}
 }

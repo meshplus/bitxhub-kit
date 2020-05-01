@@ -11,7 +11,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
-	"github.com/meshplus/bitxhub-kit/network/pb"
+	network_pb "github.com/meshplus/bitxhub-kit/network/pb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,7 +62,7 @@ func TestP2P_Send(t *testing.T) {
 	err = p2.Connect(addr1)
 	assert.Nil(t, err)
 
-	err = p1.AsyncSend(addr2, &pb.Message{Data: msg})
+	err = p1.AsyncSend(addr2, &network_pb.Message{Data: msg})
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -108,7 +108,7 @@ func TestP2p_MultiSend(t *testing.T) {
 	go func() {
 		for i := 0; i < N; i++ {
 			time.Sleep(200 * time.Microsecond)
-			err = p1.AsyncSend(addr2, &pb.Message{Data: msg})
+			err = p1.AsyncSend(addr2, &network_pb.Message{Data: msg})
 			assert.Nil(t, err)
 		}
 
