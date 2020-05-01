@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pb;
+package network.pb;
 
 message Message {
     bytes data = 1;
