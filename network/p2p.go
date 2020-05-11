@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -170,4 +171,14 @@ func AddrToPeerInfo(multiAddr string) (*peer.AddrInfo, error) {
 
 func (p2p *P2P) Disconnect(addr *peer.AddrInfo) error {
 	return p2p.host.Network().ClosePeer(addr.ID)
+}
+
+func (p2p *P2P) GetRemotePubKey(id peer.ID) (crypto.PubKey, error) {
+	conns := p2p.host.Network().ConnsToPeer(id)
+
+	for _, conn := range conns {
+		return conn.RemotePublicKey(), nil
+	}
+
+	return nil, fmt.Errorf("get remote pub key: not found")
 }
