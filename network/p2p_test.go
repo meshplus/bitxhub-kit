@@ -2,7 +2,9 @@ package network
 
 import (
 	"context"
+	ecdsa2 "crypto/ecdsa"
 	"crypto/rand"
+	"crypto/x509"
 	"fmt"
 	"testing"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
 	network_pb "github.com/meshplus/bitxhub-kit/network/pb"
 	"github.com/stretchr/testify/assert"
 )
@@ -89,6 +92,23 @@ func TestP2p_MultiSend(t *testing.T) {
 	err = p1.Connect(addr2)
 	assert.Nil(t, err)
 	err = p2.Connect(addr1)
+	assert.Nil(t, err)
+
+	pubKey, err := p2.GetRemotePubKey(addr1.ID)
+	assert.Nil(t, err)
+
+	id, err := peer.IDFromPublicKey(pubKey)
+	assert.Equal(t, addr1.ID, id)
+	assert.Nil(t, err)
+
+	raw, err := pubKey.Raw()
+	assert.Nil(t, err)
+
+	key, err := x509.ParsePKIXPublicKey(raw)
+	assert.Nil(t, err)
+
+	publicKey := ecdsa.NewPublicKey(key.(*ecdsa2.PublicKey))
+	_, err = publicKey.Address()
 	assert.Nil(t, err)
 
 	N := 50

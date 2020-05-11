@@ -39,6 +39,10 @@ type PublicKey struct {
 	k *ecdsa.PublicKey
 }
 
+func NewPublicKey(k *ecdsa.PublicKey) *PublicKey {
+	return &PublicKey{k: k}
+}
+
 // ECDSASig holds the r and s values of an ECDSA signature
 type Sig struct {
 	R, S *big.Int
