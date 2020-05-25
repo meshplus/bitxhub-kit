@@ -3,9 +3,7 @@ module github.com/meshplus/bitxhub-kit
 go 1.13
 
 require (
-	github.com/cbergoon/merkletree v0.2.0
 	github.com/gogo/protobuf v1.3.1
-	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2-0.20160603034137-1fa385a6f458 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.2.0+incompatible
@@ -13,12 +11,11 @@ require (
 	github.com/libp2p/go-libp2p-core v0.3.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
-	github.com/meshplus/bitxhub-model v1.0.0-rc3
+	github.com/meshplus/bitxhub-model v1.0.0-rc4.0.20200514093243-7e8ae60d1c19
 	github.com/multiformats/go-multiaddr v0.2.0
 	github.com/onsi/ginkgo v1.11.0 // indirect
 	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
-	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.4.2
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271

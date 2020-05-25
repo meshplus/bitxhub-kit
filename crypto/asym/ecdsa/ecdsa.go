@@ -11,7 +11,6 @@ import (
 	"math/big"
 
 	"github.com/meshplus/bitxhub-kit/crypto"
-	"github.com/meshplus/bitxhub-kit/crypto/asym/secp256k1"
 	"github.com/meshplus/bitxhub-kit/types"
 )
 
@@ -21,8 +20,6 @@ var _ crypto.PublicKey = (*PublicKey)(nil)
 type AlgorithmOption string
 
 const (
-	// Secp256k1 secp256k1 algorithm
-	Secp256k1 AlgorithmOption = "Secp256k1"
 	// Secp256r1 secp256r1 algorithm
 	Secp256r1 AlgorithmOption = "Secp256r1"
 )
@@ -51,13 +48,6 @@ type Sig struct {
 // GenerateKey generate a pair of key,input is algorithm type
 func GenerateKey(opt AlgorithmOption) (crypto.PrivateKey, error) {
 	switch opt {
-	case Secp256k1:
-		pri, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-		if err != nil {
-			return nil, err
-		}
-
-		return &PrivateKey{K: pri}, nil
 	case Secp256r1:
 		pri, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
@@ -85,10 +75,6 @@ func (priv *PrivateKey) PublicKey() crypto.PublicKey {
 }
 
 func (priv *PrivateKey) Sign(digest []byte) ([]byte, error) {
-	if priv.K.PublicKey.Curve == secp256k1.S256() {
-		return secp256k1.Sign(digest, priv.K.D.Bytes())
-	}
-
 	r, s, err := ecdsa.Sign(rand.Reader, priv.K, digest[:])
 	if err != nil {
 		return nil, err
@@ -113,8 +99,6 @@ func UnmarshalPrivateKey(data []byte, opt AlgorithmOption) (crypto.PrivateKey, e
 	key.K.D = big.NewInt(0)
 	key.K.D.SetBytes(data)
 	switch opt {
-	case Secp256k1:
-		key.K.PublicKey.Curve = secp256k1.S256()
 	case Secp256r1:
 		key.K.PublicKey.Curve = elliptic.P256()
 	default:
@@ -139,8 +123,6 @@ func UnmarshalPublicKey(data []byte, opt AlgorithmOption) (crypto.PublicKey, err
 	key.k.X.SetBytes(data[1:33])
 	key.k.Y.SetBytes(data[33:])
 	switch opt {
-	case Secp256k1:
-		key.k.Curve = secp256k1.S256()
 	case Secp256r1:
 		key.k.Curve = elliptic.P256()
 	}
@@ -177,23 +159,6 @@ func (pub *PublicKey) Address() (types.Address, error) {
 func (pub *PublicKey) Verify(digest []byte, sig []byte) (bool, error) {
 	if sig == nil {
 		return false, fmt.Errorf("nil signature")
-	}
-
-	if pub.k.Curve == secp256k1.S256() {
-		recoverKey, err := secp256k1.RecoverPubkey(digest, sig)
-		if err != nil {
-			return false, err
-		}
-		pub, err := pub.Bytes()
-		if err != nil {
-			return false, err
-		}
-
-		if !bytes.Equal(recoverKey, pub) {
-			return false, fmt.Errorf("invalid signature")
-		}
-
-		return true, nil
 	}
 
 	if len(sig) != 130 {
