@@ -1,14 +1,11 @@
 package asym
 
 import (
-	"bytes"
 	crypto2 "crypto"
-	"crypto/sha256"
 	"fmt"
 
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
-	"github.com/meshplus/bitxhub-kit/crypto/asym/secp256k1"
 	"github.com/meshplus/bitxhub-kit/types"
 )
 
@@ -19,8 +16,6 @@ type AlgorithmOption int
 const (
 	// RSA is an enum for the supported RSA key type
 	RSA AlgorithmOption = iota
-	// ECDSASecp256k1 is an enum for the supported ECDSA key type
-	ECDSASecp256k1
 	// ECDSASecp256r1 is an enum for the supported ECDSA key type
 	ECDSASecp256r1
 	// Ed25519 is an enum for the supported Ed25519 key type
@@ -31,8 +26,6 @@ func GenerateKey(opt AlgorithmOption) (crypto.PrivateKey, error) {
 	switch opt {
 	case RSA:
 		return nil, fmt.Errorf("don`t support rsa algorithm currently")
-	case ECDSASecp256k1:
-		return ecdsa.GenerateKey(ecdsa.Secp256k1)
 	case ECDSASecp256r1:
 		return ecdsa.GenerateKey(ecdsa.Secp256r1)
 	case Ed25519:
@@ -46,15 +39,6 @@ func Verify(opt AlgorithmOption, sig, digest []byte, from types.Address) (bool, 
 	switch opt {
 	case RSA:
 		return false, fmt.Errorf("don`t support rsa algorithm currently")
-	case ECDSASecp256k1:
-		pubBytes, err := secp256k1.RecoverPubkey(digest, sig)
-		if err != nil {
-			return false, err
-		}
-
-		data := sha256.Sum256(pubBytes[1:])
-
-		return bytes.Equal(data[12:], from[:]), nil
 	case ECDSASecp256r1:
 		if len(sig) != 130 {
 			return false, fmt.Errorf("signature length is not correct")

@@ -10,19 +10,6 @@ import (
 
 var msg = make([]byte, 961)
 
-func TestSignK1(t *testing.T) {
-	h := sha256.Sum256(msg)
-	priv, err := GenerateKey(Secp256k1)
-	require.Nil(t, err)
-	sign, err := priv.Sign(h[:])
-	require.Nil(t, err)
-	require.NotEqual(t, nil, sign)
-	pub := priv.PublicKey()
-	if b, err := pub.Verify(h[:], sign); !b || err != nil {
-		t.Error("fail")
-	}
-}
-
 func TestSignR1(t *testing.T) {
 	h := sha256.Sum256(msg)
 	priv, err := GenerateKey(Secp256r1)
@@ -58,47 +45,47 @@ func TestGenerateKey(t *testing.T) {
 	require.Nil(t, err)
 }
 
-func TestPublicKey(t *testing.T) {
-	privKeyK1, err := GenerateKey(Secp256k1)
-	require.Nil(t, err)
+//func TestPublicKey(t *testing.T) {
+//	privKeyK1, err := GenerateKey(Secp256k1)
+//	require.Nil(t, err)
+//
+//	pubKeyK1 := privKeyK1.PublicKey()
+//	_, err = pubKeyK1.Bytes()
+//	require.Nil(t, err)
+//
+//	_, err = pubKeyK1.Address()
+//	require.Nil(t, err)
+//
+//	digest := sha256.Sum256(msg)
+//
+//	sig, err := privKeyK1.Sign(digest[:])
+//	require.Nil(t, err)
+//
+//	isOK, err := pubKeyK1.Verify(digest[:], sig)
+//	require.Nil(t, err)
+//	require.Equal(t, true, isOK)
+//}
 
-	pubKeyK1 := privKeyK1.PublicKey()
-	_, err = pubKeyK1.Bytes()
-	require.Nil(t, err)
-
-	_, err = pubKeyK1.Address()
-	require.Nil(t, err)
-
-	digest := sha256.Sum256(msg)
-
-	sig, err := privKeyK1.Sign(digest[:])
-	require.Nil(t, err)
-
-	isOK, err := pubKeyK1.Verify(digest[:], sig)
-	require.Nil(t, err)
-	require.Equal(t, true, isOK)
-}
-
-func TestUnmarshalPrivateKey(t *testing.T) {
-	priv, err := GenerateKey(Secp256k1)
-	require.Nil(t, err)
-
-	bs, err := priv.Bytes()
-	require.Nil(t, err)
-
-	pri, err := UnmarshalPrivateKey(bs, Secp256k1)
-	require.Nil(t, err)
-
-	body, err := pri.Bytes()
-	require.Nil(t, err)
-
-	require.Equal(t, bs, body)
-
-	add, err := priv.PublicKey().Address()
-	require.Nil(t, err)
-
-	addr, err := pri.PublicKey().Address()
-	require.Nil(t, err)
-
-	require.Equal(t, add, addr)
-}
+//func TestUnmarshalPrivateKey(t *testing.T) {
+//	priv, err := GenerateKey(Secp256k1)
+//	require.Nil(t, err)
+//
+//	bs, err := priv.Bytes()
+//	require.Nil(t, err)
+//
+//	pri, err := UnmarshalPrivateKey(bs, Secp256k1)
+//	require.Nil(t, err)
+//
+//	body, err := pri.Bytes()
+//	require.Nil(t, err)
+//
+//	require.Equal(t, bs, body)
+//
+//	add, err := priv.PublicKey().Address()
+//	require.Nil(t, err)
+//
+//	addr, err := pri.PublicKey().Address()
+//	require.Nil(t, err)
+//
+//	require.Equal(t, add, addr)
+//}
