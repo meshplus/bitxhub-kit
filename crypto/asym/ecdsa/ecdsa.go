@@ -59,6 +59,12 @@ func GenerateKey(opt AlgorithmOption) (crypto.PrivateKey, error) {
 	return nil, fmt.Errorf("wrong curve option")
 }
 
+func NewWithCryptoKey(priv *ecdsa.PrivateKey) crypto.PrivateKey {
+	return &PrivateKey{
+		K: priv,
+	}
+}
+
 // Bytes returns a serialized, storable representation of this key
 func (priv *PrivateKey) Bytes() ([]byte, error) {
 	if priv.K == nil {
