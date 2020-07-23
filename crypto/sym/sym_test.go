@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +15,7 @@ func TestAES(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	require.Nil(t, err)
-	aes, err := GenerateKey(AES, key)
+	aes, err := GenerateSymKey(crypto.AES, key)
 	require.Nil(t, err)
 
 	c, err := aes.Encrypt([]byte(msg))
@@ -31,7 +31,7 @@ func TestAESKey_Error(t *testing.T) {
 	key := make([]byte, 12)
 	_, err := rand.Read(key)
 	require.Nil(t, err)
-	_, err = GenerateKey(AES, key)
+	_, err = GenerateSymKey(crypto.AES, key)
 	require.Equal(t, aesKeyLengthError, err)
 }
 
@@ -39,7 +39,7 @@ func TestThirdDESKey(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	assert.Nil(t, err)
-	des, err := GenerateKey(ThirdDES, key)
+	des, err := GenerateSymKey(crypto.ThirdDES, key)
 	assert.Nil(t, err)
 
 	c, err := des.Encrypt([]byte(msg))

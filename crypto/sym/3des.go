@@ -6,6 +6,8 @@ import (
 	"crypto/des"
 	"crypto/rand"
 	"errors"
+
+	"github.com/meshplus/bitxhub-kit/crypto"
 )
 
 // TripleDES a 3DES instance is a tool to encrypt and decrypt
@@ -29,6 +31,10 @@ func (ea *ThirdDESKey) Encrypt(plain []byte) (cipher []byte, err error) {
 // Decrypt decrypt
 func (ea *ThirdDESKey) Decrypt(cipherTex []byte) (plaintext []byte, err error) {
 	return TripleDesDec(ea.key, cipherTex)
+}
+
+func (ea *ThirdDESKey) Type() crypto.KeyType {
+	return crypto.AES
 }
 
 // TripleDesEnc encryption algorithm implements
