@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	uri       string
-	exchange  string
-	queueName string
-	logger    *logrus.Entry
-	handler   MessageHandler
+	uri          string
+	exchange     string
+	exchangeType string
+	queueName    string
+	logger       *logrus.Entry
+	handler      MessageHandler
 }
 
 type Option func(*Config)
@@ -25,6 +26,12 @@ func WithURI(uri string) Option {
 func WithExchange(exchange string) Option {
 	return func(config *Config) {
 		config.exchange = exchange
+	}
+}
+
+func WithExchangeType(exchangeType string) Option {
+	return func(config *Config) {
+		config.exchangeType = exchangeType
 	}
 }
 
@@ -54,7 +61,7 @@ func generateConfig(opts ...Option) (*Config, error) {
 
 	if config.uri == "" ||
 		config.queueName == "" ||
-		config.exchange == "" {
+		config.exchange == "" || config.exchangeType == "" {
 		return nil, fmt.Errorf("uri or queue name or exchange is empty")
 	}
 

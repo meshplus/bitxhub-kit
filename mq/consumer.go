@@ -40,7 +40,7 @@ func NewConsumer(opts ...Option) (*Consumer, error) {
 		queueName:    config.queueName,
 		exchange:     config.exchange,
 		logger:       config.logger,
-		exchangeType: "direct",
+		exchangeType: config.exchangeType,
 		routingKey:   "MQLog",
 		conn:         nil,
 		channel:      nil,
