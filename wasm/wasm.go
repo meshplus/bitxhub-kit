@@ -12,6 +12,11 @@ import (
 	"github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
+const (
+	CONTEXT_ARGMAP    = "argmap"
+	CONTEXT_INTERFACE = "interface"
+)
+
 var (
 	errorLackOfMethod = fmt.Errorf("wasm execute: lack of method name")
 )
@@ -38,7 +43,8 @@ type Wasm struct {
 	// wasm instance
 	Instance wasmer.Instance
 
-	argMap map[int]int
+	context map[string]interface{}
+	argMap  map[int]int
 }
 
 // Contract represents the smart contract structure used in the wasm vm
@@ -143,7 +149,8 @@ func (w *Wasm) Execute(input []byte) ([]byte, error) {
 		}
 	}
 
-	w.Instance.SetContextData(w.argMap)
+	w.context[CONTEXT_ARGMAP] = w.argMap
+	w.Instance.SetContextData(w.context)
 
 	result, err := methodName(slice...)
 	if err != nil {
