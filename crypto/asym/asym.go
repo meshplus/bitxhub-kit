@@ -48,6 +48,15 @@ func Verify(opt AlgorithmOption, sig, digest []byte, from types.Address) (bool, 
 		if err != nil {
 			return false, err
 		}
+
+		expected, err := pubkey.Address()
+		if err != nil {
+			return false, err
+		}
+
+		if expected.Hex() != from.Hex() {
+			return false, fmt.Errorf("wrong singer for this signature")
+		}
 		return pubkey.Verify(digest, sig)
 	case Ed25519:
 		return false, fmt.Errorf("don`t support ed25519 algorithm currently")
