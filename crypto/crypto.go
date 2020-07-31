@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"encoding/json"
+
 	"github.com/meshplus/bitxhub-kit/types"
 )
 
@@ -68,4 +70,13 @@ type SymmetricKey interface {
 
 	// Decrypt decrypts ciphertext using symmetric key.
 	Decrypt(cipher []byte) (plain []byte, err error)
+}
+
+func (key *KeyStore) Pretty() (string, error) {
+	ret, err := json.MarshalIndent(key, "", "	")
+	if err != nil {
+		return "", err
+	}
+
+	return string(ret), nil
 }

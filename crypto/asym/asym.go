@@ -106,35 +106,9 @@ func PubKeyToStdKey(pub crypto.PublicKey) (crypto2.PublicKey, error) {
 }
 
 func StorePrivateKey(priv crypto.PrivateKey, keyFilePath, password string) error {
-	var cipherText string
-
-	privBytes, err := priv.Bytes()
+	keyStore, err := GenKeyStore(priv, password)
 	if err != nil {
 		return err
-	}
-	if password != "" {
-		hash := sha256.Sum256([]byte(password))
-		aesKey, err := sym.GenerateSymKey(crypto.AES, hash[:])
-		if err != nil {
-			return err
-		}
-
-		encrypted, err := aesKey.Encrypt(privBytes)
-		if err != nil {
-			return err
-		}
-
-		cipherText = hex.EncodeToString(encrypted)
-	} else {
-		cipherText = hex.EncodeToString(privBytes)
-	}
-
-	keyStore := crypto.KeyStore{
-		Type: priv.Type(),
-		Cipher: &crypto.CipherKey{
-			Cipher: "AES-256",
-			Data:   cipherText,
-		},
 	}
 
 	filePtr, err := os.Create(keyFilePath)
@@ -153,6 +127,39 @@ func StorePrivateKey(priv crypto.PrivateKey, keyFilePath, password string) error
 	}
 
 	return nil
+}
+
+func GenKeyStore(priv crypto.PrivateKey, password string) (*crypto.KeyStore, error) {
+	var cipherText string
+
+	privBytes, err := priv.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	if password != "" {
+		hash := sha256.Sum256([]byte(password))
+		aesKey, err := sym.GenerateSymKey(crypto.AES, hash[:])
+		if err != nil {
+			return nil, err
+		}
+
+		encrypted, err := aesKey.Encrypt(privBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		cipherText = hex.EncodeToString(encrypted)
+	} else {
+		cipherText = hex.EncodeToString(privBytes)
+	}
+
+	return &crypto.KeyStore{
+		Type: priv.Type(),
+		Cipher: &crypto.CipherKey{
+			Cipher: "AES-256",
+			Data:   cipherText,
+		},
+	}, nil
 }
 
 func RestorePrivateKey(keyFilePath, password string) (crypto.PrivateKey, error) {
