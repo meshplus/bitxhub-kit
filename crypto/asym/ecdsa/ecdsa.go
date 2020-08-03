@@ -111,8 +111,8 @@ func (priv *PrivateKey) Sign(digest []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	ss := s.Bytes()
-	vv := []byte{ss[len(ss)-1] & 0x01}
+	// generate v of signature. When r is odd, v should be 0x00, otherwise it is 0x01
+	vv := []byte{byte(s.Bit(0) & 0x01)}
 
 	return asn1.Marshal(Sig{Pub: pubBytes, R: r, S: s, V: vv})
 }

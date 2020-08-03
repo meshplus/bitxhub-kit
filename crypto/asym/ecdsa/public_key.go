@@ -3,12 +3,12 @@ package ecdsa
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/types"
 )
@@ -91,7 +91,7 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 func (pub *PublicKey) Address() (types.Address, error) {
 	data := elliptic.Marshal(pub.K.Curve, pub.K.X, pub.K.Y)
 
-	ret := sha256.Sum256(data[1:])
+	ret := ecrypto.Keccak256(data[1:])
 
 	return types.Bytes2Address(ret[12:]), nil
 }
@@ -105,8 +105,7 @@ func (pub *PublicKey) Verify(digest []byte, sig []byte) (bool, error) {
 	if _, err := asn1.Unmarshal(sig, sigStruct); err != nil {
 		return false, err
 	}
-	b := sigStruct.V[0] & 0x01
-	if sigStruct.V[0] != b && sigStruct.V[0] != b+27 {
+	if sigStruct.V[0] != 0x01 && sigStruct.V[0] != 0x00 {
 		return false, fmt.Errorf("invalid signature recover ID")
 	}
 
