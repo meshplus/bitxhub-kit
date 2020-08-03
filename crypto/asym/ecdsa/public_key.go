@@ -105,6 +105,11 @@ func (pub *PublicKey) Verify(digest []byte, sig []byte) (bool, error) {
 	if _, err := asn1.Unmarshal(sig, sigStruct); err != nil {
 		return false, err
 	}
+	b := sigStruct.V[0] & 0x01
+	if sigStruct.V[0] != b && sigStruct.V[0] != b+27 {
+		return false, fmt.Errorf("invalid signature recover ID")
+	}
+
 	if !ecdsa.Verify(pub.K, digest, sigStruct.R, sigStruct.S) {
 		return false, fmt.Errorf("invalid signature")
 	}
