@@ -52,6 +52,16 @@ func testStore(t *testing.T, opt crypto.KeyType) {
 	require.Nil(t, err)
 
 	require.EqualValues(t, oldAddr, address)
+
+	keyBytes, err := key.Bytes()
+	require.Nil(t, err)
+
+	newKeyBytes, err := newKey.Bytes()
+	require.Nil(t, err)
+
+	require.Equal(t, keyBytes, newKeyBytes)
+
+	require.Equal(t, key.Type(), newKey.Type())
 }
 
 func testSignAndVerify(t *testing.T, opt crypto.KeyType) {

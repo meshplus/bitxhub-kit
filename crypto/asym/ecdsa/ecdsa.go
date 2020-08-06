@@ -140,7 +140,7 @@ func UnmarshalPrivateKey(data []byte, opt crypto.KeyType) (*PrivateKey, error) {
 		}
 	}
 
-	pri := &PrivateKey{K: priv}
+	pri := &PrivateKey{K: priv, curve: opt}
 	switch opt {
 	case crypto.ECDSA_P256, crypto.ECDSA_P384, crypto.ECDSA_P521, crypto.Secp256k1:
 		pri.K.Curve = priv.Curve
