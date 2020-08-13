@@ -225,3 +225,32 @@ func toCheckSum(a []byte) []byte {
 	}
 	return result
 }
+
+func IsValidAddressByte(data []byte) bool {
+	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
+		data = data[1 : len(data)-1]
+	}
+
+	if len(data) > 2 && data[0] == '0' && data[1] == 'x' {
+		data = data[2:]
+	}
+
+	// address data length check
+	if len(data) != 2*AddressLength {
+		return false
+	}
+
+	var a [AddressLength]byte
+
+	// address hex format check
+	n, err := hex.Decode(a[:], data)
+	if err != nil {
+		return false
+	}
+
+	// address decoded data length check
+	if n != AddressLength {
+		return false
+	}
+	return true
+}
