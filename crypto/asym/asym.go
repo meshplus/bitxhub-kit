@@ -31,7 +31,7 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	}
 }
 
-func Verify(opt crypto.KeyType, digest, sig []byte, from types.Address) (bool, error) {
+func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, error) {
 	switch opt {
 	case crypto.RSA:
 		return false, fmt.Errorf("don`t support rsa algorithm currently")

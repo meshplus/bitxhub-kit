@@ -52,16 +52,6 @@ func testStore(t *testing.T, opt crypto.KeyType) {
 	require.Nil(t, err)
 
 	require.EqualValues(t, oldAddr, address)
-
-	keyBytes, err := key.Bytes()
-	require.Nil(t, err)
-
-	newKeyBytes, err := newKey.Bytes()
-	require.Nil(t, err)
-
-	require.Equal(t, keyBytes, newKeyBytes)
-
-	require.Equal(t, key.Type(), newKey.Type())
 }
 
 func testSignAndVerify(t *testing.T, opt crypto.KeyType) {
@@ -76,7 +66,7 @@ func testSignAndVerify(t *testing.T, opt crypto.KeyType) {
 	sig, err := priv.Sign(digest[:])
 	require.Nil(t, err)
 
-	b, err := Verify(opt, digest[:], sig, addr)
+	b, err := Verify(opt, sig, digest[:], addr)
 	require.Nil(t, err)
 	require.Equal(t, true, b)
 }
@@ -95,7 +85,7 @@ func testSignAndVerifyFail(t *testing.T, opt crypto.KeyType) {
 
 	wrongDigest := sha256.Sum256([]byte("hypercha1n"))
 
-	b, err := Verify(opt, wrongDigest[:], sig, addr)
+	b, err := Verify(opt, sig, wrongDigest[:], addr)
 	require.NotNil(t, err)
 	require.Equal(t, false, b)
 }

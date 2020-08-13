@@ -28,7 +28,6 @@ type Sig struct {
 	Pub []byte   `json:"pub"`
 	R   *big.Int `json:"r"`
 	S   *big.Int `json:"s"`
-	V   []byte   `json:"v"`
 }
 
 // New generate a ecdsa private key,input is algorithm type
@@ -111,10 +110,7 @@ func (priv *PrivateKey) Sign(digest []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// generate v of signature. When r is odd, v should be 0x00, otherwise it is 0x01
-	vv := []byte{byte(s.Bit(0) & 0x01)}
-
-	return asn1.Marshal(Sig{Pub: pubBytes, R: r, S: s, V: vv})
+	return asn1.Marshal(Sig{Pub: pubBytes, R: r, S: s})
 }
 
 func (priv *PrivateKey) Type() crypto.KeyType {
