@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/meshplus/bitxhub-kit/crypto"
+	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
 )
 
 type ellipticECDH struct {
@@ -24,10 +25,10 @@ func (e ellipticECDH) Check(peerPubkey []byte) error {
 	if len(peerPubkey) == 0 {
 		return fmt.Errorf("empty public key byte")
 	}
-	if len(peerPubkey) != 65 {
-		return fmt.Errorf("public key data length is not 65")
+	x, y, err := getXYFromPub(peerPubkey)
+	if err != nil {
+		return err
 	}
-	x, y := getXYFromPub(peerPubkey)
 	if !e.curve.IsOnCurve(x, y) {
 		return fmt.Errorf("peer's public key is not on curve")
 	}
@@ -40,21 +41,29 @@ func (e ellipticECDH) ComputeSecret(privkey crypto.PrivateKey, peerPubkey []byte
 	if err != nil {
 		return nil, err
 	}
-	x, y := getXYFromPub(peerPubkey)
+
+	x, y, err := getXYFromPub(peerPubkey)
+	if err != nil {
+		return nil, err
+	}
+
 	privBytes, err := privkey.Bytes()
 	if err != nil {
 		return nil, err
 	}
+
 	sX, _ := e.curve.ScalarMult(x, y, privBytes)
 	secret := sX.Bytes()
 
 	return secret, nil
 }
 
-func getXYFromPub(pub []byte) (X, Y *big.Int) {
-	x := big.NewInt(0)
-	y := big.NewInt(0)
-	x.SetBytes(pub[1:33])
-	y.SetBytes(pub[33:])
-	return x, y
+func getXYFromPub(pub []byte) (*big.Int, *big.Int, error) {
+	key, err := ecdsa.UnmarshalPublicKey(pub, crypto.Secp256k1)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pubKey := key.(*ecdsa.PublicKey)
+	return pubKey.K.X, pubKey.K.Y, nil
 }
