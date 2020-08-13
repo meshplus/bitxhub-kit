@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/meshplus/bitxhub-kit/types"
@@ -45,6 +46,8 @@ type Wasm struct {
 
 	context map[string]interface{}
 	argMap  map[int]int
+
+	sync.RWMutex
 }
 
 // Contract represents the smart contract structure used in the wasm vm
@@ -76,6 +79,7 @@ func New(contractByte []byte, imports *wasmer.Imports, instances map[string]wasm
 
 	wasm.Instance = instance
 	wasm.argMap = make(map[int]int)
+	wasm.context = make(map[string]interface{})
 
 	return wasm, nil
 }
@@ -158,4 +162,11 @@ func (w *Wasm) Execute(input []byte) ([]byte, error) {
 	}
 
 	return []byte(result.String()), err
+}
+
+func (w *Wasm) SetContext(key string, value interface{}) {
+	w.Lock()
+	defer w.Unlock()
+
+	w.context[key] = value
 }
