@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/meshplus/bitxhub-kit/hexutil"
+	"golang.org/x/crypto/sha3"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -30,7 +31,8 @@ func (h Hash) Bytes() []byte {
 }
 
 func (h Hash) Hex() string {
-	return "0x" + hex.EncodeToString(h[:])
+	result := toCheckSum(h[:])
+	return "0x" + string(result)
 }
 
 func (h *Hash) MarshalTo(data []byte) (int, error) {
@@ -103,7 +105,10 @@ func (a Address) Bytes() []byte {
 }
 
 // Hex returns an EIP55-compliant hex string representation of the address.
-func (a Address) Hex() string { return "0x" + hex.EncodeToString(a[:]) }
+func (a Address) Hex() string {
+	result := toCheckSum(a[:])
+	return "0x" + string(result)
+}
 
 func (a Address) String() string {
 	return a.Hex()
@@ -200,31 +205,23 @@ func String2Hash(s string) Hash {
 	return Bytes2Hash(d)
 }
 
-func IsValidAddressByte(data []byte) bool {
-	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
-		data = data[1 : len(data)-1]
-	}
+func toCheckSum(a []byte) []byte {
+	unchecksummed := hex.EncodeToString(a[:])
+	sha := sha3.NewLegacyKeccak256()
+	sha.Write([]byte(unchecksummed))
+	hash := sha.Sum(nil)
 
-	if len(data) > 2 && data[0] == '0' && data[1] == 'x' {
-		data = data[2:]
+	result := []byte(unchecksummed)
+	for i := 0; i < len(result); i++ {
+		hashByte := hash[i/2]
+		if i%2 == 0 {
+			hashByte = hashByte >> 4
+		} else {
+			hashByte &= 0xf
+		}
+		if result[i] > '9' && hashByte > 7 {
+			result[i] -= 32
+		}
 	}
-
-	// address data length check
-	if len(data) != 2*AddressLength {
-		return false
-	}
-
-	var a [AddressLength]byte
-
-	// address hex format check
-	n, err := hex.Decode(a[:], data)
-	if err != nil {
-		return false
-	}
-
-	// address decoded data length check
-	if n != AddressLength {
-		return false
-	}
-	return true
+	return result
 }

@@ -107,7 +107,8 @@ func TestP2p_MultiSend(t *testing.T) {
 	key, err := x509.ParsePKIXPublicKey(raw)
 	assert.Nil(t, err)
 
-	publicKey := ecdsa.NewPublicKey(key.(*ecdsa2.PublicKey))
+	publicKey, err := ecdsa.NewPublicKey(*key.(*ecdsa2.PublicKey))
+	assert.Nil(t, err)
 	_, err = publicKey.Address()
 	assert.Nil(t, err)
 

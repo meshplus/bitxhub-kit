@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,7 +13,7 @@ var msg = make([]byte, 961)
 
 func TestSignR1(t *testing.T) {
 	h := sha256.Sum256(msg)
-	priv, err := GenerateKey(Secp256r1)
+	priv, err := New(crypto.ECDSA_P256)
 	require.Nil(t, err)
 	sign, err := priv.Sign(h[:])
 	require.Nil(t, err)
@@ -35,7 +36,7 @@ func TestGenerateKey(t *testing.T) {
 	// _, err = keyK1.Sign(msg)
 	// require.Nil(t, err)
 
-	keyR1, err := GenerateKey(Secp256r1)
+	keyR1, err := New(crypto.ECDSA_P256)
 	require.Nil(t, err)
 
 	_, err = keyR1.Bytes()

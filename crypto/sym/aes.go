@@ -4,6 +4,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+
+	"github.com/meshplus/bitxhub-kit/crypto"
 )
 
 // AES a AES instance is a tool to encrypt and decrypt
@@ -54,4 +56,8 @@ func (ek *AESKey) Decrypt(crypted []byte) ([]byte, error) {
 		return nil, err
 	}
 	return orig, nil
+}
+
+func (ek *AESKey) Type() crypto.KeyType {
+	return crypto.AES
 }

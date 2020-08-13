@@ -1,12 +1,40 @@
 package crypto
 
 import (
+	"encoding/json"
+
 	"github.com/meshplus/bitxhub-kit/types"
+)
+
+type KeyType int
+
+const (
+	AES = iota
+	ThirdDES
+	RSA
+	Secp256k1
+	ECDSA_P256
+	ECDSA_P384
+	ECDSA_P521
+	Ed25519
 )
 
 type Key interface {
 	// Bytes returns a serialized, storable representation of this key
 	Bytes() ([]byte, error)
+
+	// Type represent the type of key
+	Type() KeyType
+}
+
+type KeyStore struct {
+	Type   KeyType    `json:"type"`
+	Cipher *CipherKey `json:"cipher"`
+}
+
+type CipherKey struct {
+	Data   string `json:"data"`
+	Cipher string `json:"cipher"`
 }
 
 // PrivateKey represents a private key that can be used to
@@ -42,4 +70,13 @@ type SymmetricKey interface {
 
 	// Decrypt decrypts ciphertext using symmetric key.
 	Decrypt(cipher []byte) (plain []byte, err error)
+}
+
+func (key *KeyStore) Pretty() (string, error) {
+	ret, err := json.MarshalIndent(key, "", "	")
+	if err != nil {
+		return "", err
+	}
+
+	return string(ret), nil
 }

@@ -1,68 +1,85 @@
 package ecdsa
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"fmt"
 	"math/big"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/meshplus/bitxhub-kit/crypto"
-	"github.com/meshplus/bitxhub-kit/types"
 )
 
 var _ crypto.PrivateKey = (*PrivateKey)(nil)
 var _ crypto.PublicKey = (*PublicKey)(nil)
 
-type AlgorithmOption string
-
-const (
-	// Secp256r1 secp256r1 algorithm
-	Secp256r1 AlgorithmOption = "Secp256r1"
-)
-
 // PrivateKey ECDSA private key.
 // never new(PrivateKey), use NewPrivateKey()
 type PrivateKey struct {
-	K *ecdsa.PrivateKey
-}
-
-// PublicKey ECDSA public key.
-// never new(PublicKey), use NewPublicKey()
-type PublicKey struct {
-	k *ecdsa.PublicKey
-}
-
-func NewPublicKey(k *ecdsa.PublicKey) *PublicKey {
-	return &PublicKey{k: k}
+	curve crypto.KeyType
+	K     *ecdsa.PrivateKey
 }
 
 // ECDSASig holds the r and s values of an ECDSA signature
 type Sig struct {
-	R, S *big.Int
+	Pub []byte   `json:"pub"`
+	R   *big.Int `json:"r"`
+	S   *big.Int `json:"s"`
 }
 
-// GenerateKey generate a pair of key,input is algorithm type
-func GenerateKey(opt AlgorithmOption) (crypto.PrivateKey, error) {
+// New generate a ecdsa private key,input is algorithm type
+func New(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	switch opt {
-	case Secp256r1:
+	case crypto.Secp256k1:
+		pri, err := ecdsa.GenerateKey(btcec.S256(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+
+		return &PrivateKey{K: pri, curve: crypto.Secp256k1}, nil
+	case crypto.ECDSA_P256:
 		pri, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return nil, err
 		}
 
-		return &PrivateKey{K: pri}, nil
+		return &PrivateKey{K: pri, curve: crypto.ECDSA_P256}, nil
+	case crypto.ECDSA_P384:
+		pri, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+
+		return &PrivateKey{K: pri, curve: crypto.ECDSA_P384}, nil
+	case crypto.ECDSA_P521:
+		pri, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+
+		return &PrivateKey{K: pri, curve: crypto.ECDSA_P521}, nil
 	}
 	return nil, fmt.Errorf("wrong curve option")
 }
 
-func NewWithCryptoKey(priv *ecdsa.PrivateKey) crypto.PrivateKey {
-	return &PrivateKey{
-		K: priv,
+func NewWithCryptoKey(priv *ecdsa.PrivateKey) (crypto.PrivateKey, error) {
+	newPrivKey := &PrivateKey{}
+	switch priv.Curve {
+	case elliptic.P256():
+		newPrivKey.curve = crypto.ECDSA_P256
+	case elliptic.P384():
+		newPrivKey.curve = crypto.ECDSA_P384
+	case elliptic.P521():
+		newPrivKey.curve = crypto.ECDSA_P521
+	case btcec.S256():
+		newPrivKey.curve = crypto.Secp256k1
 	}
+
+	newPrivKey.K = priv
+	return newPrivKey, nil
 }
 
 // Bytes returns a serialized, storable representation of this key
@@ -70,14 +87,16 @@ func (priv *PrivateKey) Bytes() ([]byte, error) {
 	if priv.K == nil {
 		return nil, fmt.Errorf("ECDSAPrivateKey.K is nil, please invoke FromBytes()")
 	}
-	r := make([]byte, 32)
-	a := priv.K.D.Bytes()
-	copy(r[32-len(a):], a)
-	return r, nil
+
+	if priv.Type() == crypto.Secp256k1 {
+		rawKey := (*btcec.PrivateKey)(priv.K).Serialize()
+		return rawKey, nil
+	}
+	return x509.MarshalECPrivateKey(priv.K)
 }
 
 func (priv *PrivateKey) PublicKey() crypto.PublicKey {
-	return &PublicKey{k: &priv.K.PublicKey}
+	return &PublicKey{K: &priv.K.PublicKey}
 }
 
 func (priv *PrivateKey) Sign(digest []byte) ([]byte, error) {
@@ -85,101 +104,45 @@ func (priv *PrivateKey) Sign(digest []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	rr := r.Bytes()
-	ss := s.Bytes()
-	vv := []byte{ss[len(ss)-1] & 0x01}
-	pub, err := priv.PublicKey().Bytes()
+
+	pubBytes, err := priv.PublicKey().Bytes()
 	if err != nil {
 		return nil, err
 	}
 
-	return bytes.Join([][]byte{make([]byte, 32-len(rr)),
-		rr, make([]byte, 32-len(ss)), ss, vv, pub}, nil), nil
+	return asn1.Marshal(Sig{Pub: pubBytes, R: r, S: s})
 }
 
-func UnmarshalPrivateKey(data []byte, opt AlgorithmOption) (crypto.PrivateKey, error) {
+func (priv *PrivateKey) Type() crypto.KeyType {
+	return priv.curve
+}
+
+func UnmarshalPrivateKey(data []byte, opt crypto.KeyType) (*PrivateKey, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty private key data")
 	}
-	key := &PrivateKey{K: new(ecdsa.PrivateKey)}
-	key.K.D = big.NewInt(0)
-	key.K.D.SetBytes(data)
+
+	var (
+		priv *ecdsa.PrivateKey
+		err  error
+	)
+	if opt == crypto.Secp256k1 {
+		Secp256k1Key, _ := btcec.PrivKeyFromBytes(btcec.S256(), data)
+		priv = Secp256k1Key.ToECDSA()
+	} else {
+		priv, err = x509.ParseECPrivateKey(data)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	pri := &PrivateKey{K: priv, curve: opt}
 	switch opt {
-	case Secp256r1:
-		key.K.PublicKey.Curve = elliptic.P256()
+	case crypto.ECDSA_P256, crypto.ECDSA_P384, crypto.ECDSA_P521, crypto.Secp256k1:
+		pri.K.Curve = priv.Curve
 	default:
-		return nil, fmt.Errorf("unsupported algorithm option")
+		return nil, fmt.Errorf("not supported curve")
 	}
 
-	key.K.PublicKey.X, key.K.PublicKey.Y = key.K.Curve.ScalarBaseMult(data)
-
-	return key, nil
-}
-
-func UnmarshalPublicKey(data []byte, opt AlgorithmOption) (crypto.PublicKey, error) {
-	if len(data) == 0 {
-		return nil, fmt.Errorf("empty public key data")
-	}
-	key := &PublicKey{k: new(ecdsa.PublicKey)}
-	key.k.X = big.NewInt(0)
-	key.k.Y = big.NewInt(0)
-	if len(data) != 65 {
-		return nil, fmt.Errorf("public key data length is not 65")
-	}
-	key.k.X.SetBytes(data[1:33])
-	key.k.Y.SetBytes(data[33:])
-	switch opt {
-	case Secp256r1:
-		key.k.Curve = elliptic.P256()
-	}
-	return key, nil
-}
-
-func Unmarshal(data []byte) (crypto.PrivateKey, error) {
-	priv, err := x509.ParseECPrivateKey(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return &PrivateKey{priv}, nil
-}
-
-func (pub *PublicKey) Bytes() ([]byte, error) {
-	x := pub.k.X.Bytes()
-	y := pub.k.Y.Bytes()
-	return bytes.Join(
-		[][]byte{{0x04},
-			make([]byte, 32-len(x)), x, // padding to 32 bytes
-			make([]byte, 32-len(y)), y,
-		}, nil), nil
-}
-
-func (pub *PublicKey) Address() (types.Address, error) {
-	data := elliptic.Marshal(pub.k.Curve, pub.k.X, pub.k.Y)
-
-	ret := sha256.Sum256(data[1:])
-
-	return types.Bytes2Address(ret[12:]), nil
-}
-
-func (pub *PublicKey) Verify(digest []byte, sig []byte) (bool, error) {
-	if sig == nil {
-		return false, fmt.Errorf("nil signature")
-	}
-
-	if len(sig) != 130 {
-		return false, fmt.Errorf("signature length is not 130")
-	}
-	r := big.NewInt(0).SetBytes(sig[:32])
-	s := big.NewInt(0).SetBytes(sig[32:64])
-	b := sig[64] & 0x01
-	if sig[64] != b && sig[64] != b+27 {
-		return false, fmt.Errorf("invalid signature recover ID")
-	}
-
-	if !ecdsa.Verify(pub.k, digest, r, s) {
-		return false, fmt.Errorf("invalid signature")
-	}
-
-	return true, nil
+	return pri, nil
 }
