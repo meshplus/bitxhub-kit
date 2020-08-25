@@ -5,11 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/meshplus/bitxhub-kit/types"
 	"github.com/meshplus/bitxhub-model/pb"
 	"github.com/wasmerio/go-ext-wasm/wasmer"
+)
+
+const (
+	CONTEXT_ARGMAP    = "argmap"
+	CONTEXT_INTERFACE = "interface"
 )
 
 var (
@@ -38,7 +44,10 @@ type Wasm struct {
 	// wasm instance
 	Instance wasmer.Instance
 
-	argMap map[int]int
+	context map[string]interface{}
+	argMap  map[int]int
+
+	sync.RWMutex
 }
 
 // Contract represents the smart contract structure used in the wasm vm
@@ -70,6 +79,7 @@ func New(contractByte []byte, imports *wasmer.Imports, instances map[string]wasm
 
 	wasm.Instance = instance
 	wasm.argMap = make(map[int]int)
+	wasm.context = make(map[string]interface{})
 
 	return wasm, nil
 }
@@ -143,12 +153,33 @@ func (w *Wasm) Execute(input []byte) ([]byte, error) {
 		}
 	}
 
-	w.Instance.SetContextData(w.argMap)
+	w.context[CONTEXT_ARGMAP] = w.argMap
+	w.Instance.SetContextData(w.context)
 
 	result, err := methodName(slice...)
 	if err != nil {
 		return nil, err
 	}
+	for i := range slice {
+		arg := payload.Args[i]
+		switch arg.Type {
+		case pb.Arg_String:
+			if err := w.FreeString(slice[i], string(arg.Value)); err != nil {
+				return nil, err
+			}
+		case pb.Arg_Bytes:
+			if err := w.FreeBytes(slice[i], arg.Value); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	return []byte(result.String()), err
+}
+
+func (w *Wasm) SetContext(key string, value interface{}) {
+	w.Lock()
+	defer w.Unlock()
+
+	w.context[key] = value
 }
