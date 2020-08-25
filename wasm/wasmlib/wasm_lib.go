@@ -5,7 +5,6 @@ package wasmlib
 // extern int32_t test_verify(void *context, long long proof_ptr, long long validator_ptr, long long payload_ptr);
 import "C"
 import (
-	"fmt"
 	"unsafe"
 
 	"github.com/wasmerio/go-ext-wasm/wasmer"
@@ -15,16 +14,16 @@ import (
 func test_verify(context unsafe.Pointer, proof_ptr int64, validator_ptr int64, payload_ptr int64) int32 {
 	ctx := wasmer.IntoInstanceContext(context)
 	ctxMap := ctx.Data().(map[string]interface{})
-	data := ctxMap["argmap"].(map[int]int)
-	memory := ctx.Memory()
-	proof := memory.Data()[proof_ptr : proof_ptr+int64(data[int(proof_ptr)])]
-	validator := memory.Data()[validator_ptr : validator_ptr+int64(data[int(validator_ptr)])]
-	payload := memory.Data()[payload_ptr : payload_ptr+int64(data[int(payload_ptr)])]
+	_ = ctxMap["argmap"].(map[int]int)
+	_ = ctx.Memory()
+	// proof := memory.Data()[proof_ptr : proof_ptr+int64(data[int(proof_ptr)])]
+	// validator := memory.Data()[validator_ptr : validator_ptr+int64(data[int(validator_ptr)])]
+	// payload := memory.Data()[payload_ptr : payload_ptr+int64(data[int(payload_ptr)])]
 
-	fmt.Println(proof)
-	fmt.Println(validator)
-	fmt.Println(payload)
-	fmt.Println(ctxMap["hello"].(string))
+	// fmt.Println(proof)
+	// fmt.Println(validator)
+	// fmt.Println(payload)
+	// fmt.Println(ctxMap["hello"].(string))
 
 	return 1
 }
