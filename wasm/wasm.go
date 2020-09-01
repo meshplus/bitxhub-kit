@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/meshplus/bitxhub-kit/types"
@@ -16,19 +17,34 @@ var (
 	errorLackOfMethod = fmt.Errorf("wasm execute: lack of method name")
 )
 
-func getInstance(code []byte, imports *wasmer.Imports, instances map[string]wasmer.Instance) (wasmer.Instance, error) {
+func getInstance(code []byte, imports *wasmer.Imports, instances *sync.Map) (wasmer.Instance, error) {
 	ret := sha256.Sum256(code)
-	v, ok := instances[string(ret[:])]
-	if ok {
-		return v, nil
+	var (
+		instance wasmer.Instance
+		err      error
+		pool *sync.Pool
+	)
+	v, ok := instances.Load(string(ret[:]))
+	if !ok {
+		v = &sync.Pool{
+			New: func() interface{} {
+				instance, _ := wasmer.NewInstanceWithImports(code, imports)
+				return instance
+			},
+		}
+		instances.Store(string(ret[:]), v)
 	}
 
-	instance, err := wasmer.NewInstanceWithImports(code, imports)
-	if err != nil {
-		return wasmer.Instance{}, err
+	pool = v.(*sync.Pool)
+	rawInstance := pool.Get()
+	if rawInstance == nil {
+		instance, err = wasmer.NewInstanceWithImports(code, imports)
+		if err != nil {
+			return wasmer.Instance{}, err
+		}
+	} else {
+		instance = rawInstance.(wasmer.Instance)
 	}
-
-	instances[string(ret[:])] = instance
 
 	return instance, nil
 }
@@ -51,7 +67,7 @@ type Contract struct {
 }
 
 // New creates a wasm vm instance
-func New(contractByte []byte, imports *wasmer.Imports, instances map[string]wasmer.Instance) (*Wasm, error) {
+func New(contractByte []byte, imports *wasmer.Imports, instances *sync.Map) (*Wasm, error) {
 	wasm := &Wasm{}
 
 	contract := &Contract{}
