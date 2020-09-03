@@ -1,7 +1,6 @@
 package wasm
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -17,28 +16,27 @@ var (
 	errorLackOfMethod = fmt.Errorf("wasm execute: lack of method name")
 )
 
-func getInstance(code []byte, imports *wasmer.Imports, instances *sync.Map) (wasmer.Instance, error) {
-	ret := sha256.Sum256(code)
+func getInstance(contract *Contract, imports *wasmer.Imports, instances *sync.Map) (wasmer.Instance, error) {
 	var (
 		instance wasmer.Instance
 		err      error
 		pool *sync.Pool
 	)
-	v, ok := instances.Load(string(ret[:]))
+	v, ok := instances.Load(contract.Hash.Hex())
 	if !ok {
 		v = &sync.Pool{
 			New: func() interface{} {
-				instance, _ := wasmer.NewInstanceWithImports(code, imports)
+				instance, _ := wasmer.NewInstanceWithImports(contract.Code, imports)
 				return instance
 			},
 		}
-		instances.Store(string(ret[:]), v)
+		instances.Store(contract.Hash.Hex(), v)
 	}
 
 	pool = v.(*sync.Pool)
 	rawInstance := pool.Get()
 	if rawInstance == nil {
-		instance, err = wasmer.NewInstanceWithImports(code, imports)
+		instance, err = wasmer.NewInstanceWithImports(contract.Code, imports)
 		if err != nil {
 			return wasmer.Instance{}, err
 		}
@@ -79,7 +77,7 @@ func New(contractByte []byte, imports *wasmer.Imports, instances *sync.Map) (*Wa
 		return wasm, fmt.Errorf("contract byte is empty")
 	}
 
-	instance, err := getInstance(contract.Code, imports, instances)
+	instance, err := getInstance(contract, imports, instances)
 	if err != nil {
 		return nil, err
 	}
