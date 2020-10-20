@@ -66,7 +66,7 @@ func testSignAndVerify(t *testing.T, opt crypto.KeyType) {
 	sig, err := priv.Sign(digest[:])
 	require.Nil(t, err)
 
-	b, err := Verify(opt, sig, digest[:], addr)
+	b, err := Verify(opt, sig, digest[:], *addr)
 	require.Nil(t, err)
 	require.Equal(t, true, b)
 }
@@ -85,7 +85,7 @@ func testSignAndVerifyFail(t *testing.T, opt crypto.KeyType) {
 
 	wrongDigest := sha256.Sum256([]byte("hypercha1n"))
 
-	b, err := Verify(opt, sig, wrongDigest[:], addr)
+	b, err := Verify(opt, sig, wrongDigest[:], *addr)
 	require.NotNil(t, err)
 	require.Equal(t, false, b)
 }

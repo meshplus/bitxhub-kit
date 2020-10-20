@@ -48,6 +48,7 @@ func (h *Hash) SetBytes(b []byte) {
 	}
 
 	copy(h.rawHash[HashLength-len(b):], b)
+	h.hash = ""
 }
 
 func (h Hash) Bytes() []byte {
@@ -125,6 +126,7 @@ func (a *Address) SetBytes(b []byte) {
 		b = b[len(b)-AddressLength:]
 	}
 	copy(a.rawAddress[AddressLength-len(b):], b)
+	a.address = ""
 }
 
 func (a Address) Bytes() []byte {
@@ -205,32 +207,33 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 }
 
 // Sets a to other
-func (a *Address) Set(other Address) {
+func (a *Address) Set(other *Address) {
 	for i, v := range other.rawAddress {
 		a.rawAddress[i] = v
 	}
+	a.address = ""
 }
 
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped address the left.
-func Bytes2Address(b []byte) Address {
-	var a Address
+func Bytes2Address(b []byte) *Address {
+	a := &Address{}
 	a.SetBytes(b)
 	return a
 }
 
-func String2Address(s string) Address {
+func String2Address(s string) *Address {
 	d := hexutil.Decode(s)
 	return Bytes2Address(d)
 }
 
-func Bytes2Hash(b []byte) Hash {
-	var a Hash
+func Bytes2Hash(b []byte) *Hash {
+	a := &Hash{}
 	a.SetBytes(b)
 	return a
 }
 
-func String2Hash(s string) Hash {
+func String2Hash(s string) *Hash {
 	d := hexutil.Decode(s)
 	return Bytes2Hash(d)
 }

@@ -55,7 +55,7 @@ type PublicKey interface {
 	Key
 
 	// Address gets address from public key
-	Address() (types.Address, error)
+	Address() (*types.Address, error)
 
 	// Verify that 'sig' is the signed hash of 'data'
 	Verify(digest []byte, sig []byte) (bool, error)

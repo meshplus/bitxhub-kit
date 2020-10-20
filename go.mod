@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
+	github.com/cbergoon/merkletree v0.2.0
 	github.com/ethereum/go-ethereum v1.9.18
 	github.com/gogo/protobuf v1.3.1
 	github.com/kr/pretty v0.2.0 // indirect
