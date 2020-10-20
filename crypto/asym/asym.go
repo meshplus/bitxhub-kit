@@ -1,6 +1,7 @@
 package asym
 
 import (
+	"bytes"
 	crypto2 "crypto"
 	ecdsa2 "crypto/ecdsa"
 	"crypto/ed25519"
@@ -35,7 +36,27 @@ func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, e
 	switch opt {
 	case crypto.RSA:
 		return false, fmt.Errorf("don`t support rsa algorithm currently")
-	case crypto.ECDSA_P256, crypto.ECDSA_P384, crypto.ECDSA_P521, crypto.Secp256k1:
+	case crypto.Secp256k1:
+		pubKeyBytes, err := ecdsa.Ecrecover(digest, sig)
+		if err != nil {
+			return false, err
+		}
+		pubkey, err := ecdsa.UnmarshalPublicKey(pubKeyBytes, opt)
+		if err != nil {
+			return false, err
+		}
+
+		expected, err := pubkey.Address()
+		if err != nil {
+			return false, err
+		}
+
+		if !bytes.Equal(expected.Bytes(), from.Bytes()) {
+			return false, fmt.Errorf("wrong singer for this signature")
+		}
+
+		return true, nil
+	case crypto.ECDSA_P256, crypto.ECDSA_P384, crypto.ECDSA_P521:
 		sigStuct := &ecdsa.Sig{}
 		_, err := asn1.Unmarshal(sig, sigStuct)
 		if err != nil {

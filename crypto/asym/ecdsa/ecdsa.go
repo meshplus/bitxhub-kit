@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/meshplus/bitxhub-kit/crypto"
 )
 
@@ -34,7 +33,7 @@ type Sig struct {
 func New(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	switch opt {
 	case crypto.Secp256k1:
-		pri, err := ecdsa.GenerateKey(btcec.S256(), rand.Reader)
+		pri, err := ecdsa.GenerateKey(S256(), rand.Reader)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +73,7 @@ func NewWithCryptoKey(priv *ecdsa.PrivateKey) (crypto.PrivateKey, error) {
 		newPrivKey.curve = crypto.ECDSA_P384
 	case elliptic.P521():
 		newPrivKey.curve = crypto.ECDSA_P521
-	case btcec.S256():
+	case S256():
 		newPrivKey.curve = crypto.Secp256k1
 	}
 
@@ -89,7 +88,7 @@ func (priv *PrivateKey) Bytes() ([]byte, error) {
 	}
 
 	if priv.Type() == crypto.Secp256k1 {
-		rawKey := (*btcec.PrivateKey)(priv.K).Serialize()
+		rawKey := FromECDSA(priv.K)
 		return rawKey, nil
 	}
 	return x509.MarshalECPrivateKey(priv.K)
@@ -100,6 +99,9 @@ func (priv *PrivateKey) PublicKey() crypto.PublicKey {
 }
 
 func (priv *PrivateKey) Sign(digest []byte) ([]byte, error) {
+	if priv.curve == crypto.Secp256k1 {
+		return Sign(digest, priv.K)
+	}
 	r, s, err := ecdsa.Sign(rand.Reader, priv.K, digest[:])
 	if err != nil {
 		return nil, err
@@ -127,8 +129,8 @@ func UnmarshalPrivateKey(data []byte, opt crypto.KeyType) (*PrivateKey, error) {
 		err  error
 	)
 	if opt == crypto.Secp256k1 {
-		Secp256k1Key, _ := btcec.PrivKeyFromBytes(btcec.S256(), data)
-		priv = Secp256k1Key.ToECDSA()
+		Secp256k1Key, _ := ToECDSA(data)
+		priv = Secp256k1Key
 	} else {
 		priv, err = x509.ParseECPrivateKey(data)
 		if err != nil {
