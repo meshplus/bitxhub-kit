@@ -88,7 +88,7 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 	return x509.MarshalPKIXPublicKey(pub.K)
 }
 
-func (pub *PublicKey) Address() (types.Address, error) {
+func (pub *PublicKey) Address() (*types.Address, error) {
 	data := elliptic.Marshal(pub.K.Curve, pub.K.X, pub.K.Y)
 
 	ret := ecrypto.Keccak256(data[1:])
