@@ -30,5 +30,5 @@ func newRotateHook(logPath string, logFileName string, maxAge time.Duration, rot
 		logrus.ErrorLevel: writer,
 		logrus.FatalLevel: writer,
 		logrus.PanicLevel: writer,
-	}, &logrus.JSONFormatter{})
+	}, getTextFormatter())
 }

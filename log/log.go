@@ -28,15 +28,7 @@ func defaultLoggerContext() *loggerContext {
 func New() *logrus.Logger {
 	logger := logrus.New()
 
-	formatter := &logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "15:04:05.000",
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			_, filename := filepath.Split(f.File)
-			return "", fmt.Sprintf("%12s:%-4d", filename, f.Line)
-		},
-	}
-
+	formatter := getTextFormatter()
 	logger.SetFormatter(formatter)
 	logger.SetReportCaller(loggerCtx.config.reportCaller)
 	logger.SetOutput(os.Stdout)
@@ -84,4 +76,15 @@ func Initialize(opts ...Option) error {
 	}
 
 	return nil
+}
+
+func getTextFormatter() logrus.Formatter {
+	return &logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "15:04:05.000",
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			_, filename := filepath.Split(f.File)
+			return "", fmt.Sprintf("%12s:%-4d", filename, f.Line)
+		},
+	}
 }
