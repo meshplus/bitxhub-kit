@@ -73,7 +73,7 @@ func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, e
 			return false, err
 		}
 
-		if expected.Hex() != from.Hex() {
+		if expected.String() != from.String() {
 			return false, fmt.Errorf("wrong singer for this signature")
 		}
 		return pubkey.Verify(digest, sig)
