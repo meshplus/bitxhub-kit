@@ -11,6 +11,7 @@ type Config struct {
 	exchange     string
 	exchangeType string
 	queueName    string
+	vHost        string
 	logger       *logrus.Entry
 	handler      MessageHandler
 }
@@ -50,6 +51,12 @@ func WithHandler(h MessageHandler) Option {
 func WithLogger(logger *logrus.Entry) Option {
 	return func(config *Config) {
 		config.logger = logger
+	}
+}
+
+func WithVHost(vHost string) Option {
+	return func(config *Config) {
+		config.vHost = vHost
 	}
 }
 

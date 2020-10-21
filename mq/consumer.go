@@ -21,6 +21,7 @@ type Consumer struct {
 	exchange     string
 	exchangeType string
 	routingKey   string
+	vHost        string
 	logger       *logrus.Entry
 	conn         *amqp.Connection
 	channel      *amqp.Channel
@@ -41,6 +42,7 @@ func NewConsumer(opts ...Option) (*Consumer, error) {
 		exchange:     config.exchange,
 		logger:       config.logger,
 		exchangeType: config.exchangeType,
+		vHost:        config.vHost,
 		routingKey:   "MQLog",
 		conn:         nil,
 		channel:      nil,
@@ -72,7 +74,10 @@ func (c *Consumer) Start() error {
 func (c *Consumer) setup() error {
 	var err error
 
-	c.conn, err = amqp.Dial(c.uri)
+	cfg := amqp.Config{
+		Vhost: c.vHost,
+	}
+	c.conn, err = amqp.DialConfig(c.uri, cfg)
 	if err != nil {
 		return fmt.Errorf("amqp dial: %w", err)
 	}
