@@ -89,3 +89,38 @@ func testSignAndVerifyFail(t *testing.T, opt crypto.KeyType) {
 	require.NotNil(t, err)
 	require.Equal(t, false, b)
 }
+
+func BenchmarkSignSecp256k1(b *testing.B) {
+	digest := sha256.Sum256([]byte("hyperchain"))
+
+	priv, err := GenerateKeyPair(crypto.Secp256k1)
+	require.Nil(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		priv.Sign(digest[:])
+	}
+}
+
+func BenchmarkVerifySecp256k1(b *testing.B) {
+	digest := sha256.Sum256([]byte("hyperchain1"))
+
+	priv, err := GenerateKeyPair(crypto.Secp256k1)
+	require.Nil(b, err)
+
+	addr, err := priv.PublicKey().Address()
+	require.Nil(b, err)
+
+	sig, err := priv.Sign(digest[:])
+	require.Nil(b, err)
+
+	res, err := Verify(crypto.Secp256k1, sig, digest[:], *addr)
+	require.Nil(b, err)
+	require.True(b, res)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Verify(crypto.Secp256k1, sig, digest[:], *addr)
+	}
+}

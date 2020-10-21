@@ -3,9 +3,7 @@ module github.com/meshplus/bitxhub-kit
 go 1.13
 
 require (
-	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/cbergoon/merkletree v0.2.0
-	github.com/ethereum/go-ethereum v1.9.18
 	github.com/gogo/protobuf v1.3.1
 	github.com/lestrrat-go/file-rotatelogs v2.2.0+incompatible
 	github.com/libp2p/go-libp2p v0.5.0

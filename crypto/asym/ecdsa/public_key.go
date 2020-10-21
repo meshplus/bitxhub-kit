@@ -7,8 +7,6 @@ import (
 	"encoding/asn1"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcec"
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/types"
 )
@@ -21,7 +19,7 @@ type PublicKey struct {
 
 func NewPublicKey(k ecdsa.PublicKey) (*PublicKey, error) {
 	switch k.Curve {
-	case elliptic.P256(), elliptic.P384(), elliptic.P521(), btcec.S256():
+	case elliptic.P256(), elliptic.P384(), elliptic.P521(), S256():
 		break
 	default:
 		return nil, fmt.Errorf("unsupported ecdsa curve option")
@@ -38,12 +36,12 @@ func UnmarshalPublicKey(data []byte, opt crypto.KeyType) (crypto.PublicKey, erro
 		ok  bool
 	)
 	if opt == crypto.Secp256k1 {
-		rawPub, err := btcec.ParsePubKey(data, btcec.S256())
+		rawPub, err := UnmarshalPubkey(data)
 		if err != nil {
 			return nil, err
 		}
 
-		pub = rawPub.ToECDSA()
+		pub = rawPub
 	} else {
 		pubInfo, err := x509.ParsePKIXPublicKey(data)
 		if err != nil {
@@ -81,7 +79,7 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 	}
 
 	if pub.Type() == crypto.Secp256k1 {
-		rawKey := (*btcec.PublicKey)(pub.K).SerializeCompressed()
+		rawKey := CompressPubkey(pub.K)
 		return rawKey, nil
 	}
 
@@ -91,7 +89,7 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 func (pub *PublicKey) Address() (*types.Address, error) {
 	data := elliptic.Marshal(pub.K.Curve, pub.K.X, pub.K.Y)
 
-	ret := ecrypto.Keccak256(data[1:])
+	ret := Keccak256(data[1:])
 
 	return types.Bytes2Address(ret[12:]), nil
 }
@@ -121,7 +119,7 @@ func (pub *PublicKey) Type() crypto.KeyType {
 		return crypto.ECDSA_P384
 	case elliptic.P521():
 		return crypto.ECDSA_P521
-	case btcec.S256():
+	case S256():
 		return crypto.Secp256k1
 	}
 	return -1
