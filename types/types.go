@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	mt "github.com/cbergoon/merkletree"
-	"github.com/meshplus/bitxhub-kit/hexutil"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -51,11 +50,11 @@ func (h *Hash) SetBytes(b []byte) {
 	h.hash = ""
 }
 
-func (h Hash) Bytes() []byte {
+func (h *Hash) Bytes() []byte {
 	return h.rawHash[:]
 }
 
-func (h *Hash) Hex() string {
+func (h *Hash) String() string {
 	if h.hash == "" {
 		// if hash field is empty, initialize it for only once
 		h.hash = "0x" + string(toCheckSum(h.rawHash[:]))
@@ -70,15 +69,6 @@ func (h *Hash) MarshalTo(data []byte) (int, error) {
 	return h.Size(), nil
 }
 
-func (h *Hash) String() string {
-	return h.Hex()
-}
-
-func (h Hash) ShortString() string {
-	s := hex.EncodeToString(h.rawHash[:])
-	return s[:6] + "..." + s[len(s)-6:]
-}
-
 func (h Hash) Size() int {
 	return HashLength
 }
@@ -90,8 +80,8 @@ func (h *Hash) Unmarshal(data []byte) error {
 }
 
 // Serialize given address to JSON
-func (h Hash) MarshalJSON() ([]byte, error) {
-	rs := []byte(fmt.Sprintf(`"%s"`, h.Hex()))
+func (h *Hash) MarshalJSON() ([]byte, error) {
+	rs := []byte(fmt.Sprintf(`"%s"`, h.String()))
 
 	return rs, nil
 }
@@ -129,12 +119,12 @@ func (a *Address) SetBytes(b []byte) {
 	a.address = ""
 }
 
-func (a Address) Bytes() []byte {
+func (a *Address) Bytes() []byte {
 	return a.rawAddress[:]
 }
 
-// Hex returns an EIP55-compliant hex string representation of the address.
-func (a *Address) Hex() string {
+// String returns an EIP55-compliant hex string representation of the address.
+func (a *Address) String() string {
 	if a.address == "" {
 		// if address field is empty, initialize it for only once
 		a.address = "0x" + string(toCheckSum(a.rawAddress[:]))
@@ -142,16 +132,7 @@ func (a *Address) Hex() string {
 	return a.address
 }
 
-func (a *Address) String() string {
-	return a.Hex()
-}
-
-func (a Address) ShortString() string {
-	s := hex.EncodeToString(a.rawAddress[:])
-	return s[:6] + "..." + s[len(s)-6:]
-}
-
-func (a Address) Size() int {
+func (a *Address) Size() int {
 	return AddressLength
 }
 
@@ -169,8 +150,8 @@ func (a *Address) Unmarshal(data []byte) error {
 }
 
 // Serialize given address to JSON
-func (a Address) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.Hex())
+func (a *Address) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.String())
 }
 
 // UnmarshalJSON parses a hash in hex syntax.
@@ -201,7 +182,7 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	a.Set(Bytes2Address(bytes))
+	a.Set(NewAddress(bytes))
 
 	return nil
 }
@@ -216,26 +197,44 @@ func (a *Address) Set(other *Address) {
 
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped address the left.
-func Bytes2Address(b []byte) *Address {
+func NewAddress(b []byte) *Address {
 	a := &Address{}
 	a.SetBytes(b)
 	return a
 }
 
-func String2Address(s string) *Address {
-	d := hexutil.Decode(s)
-	return Bytes2Address(d)
+func NewAddressByStr(s string) *Address {
+	hashBytes, _ := HexDecodeString(s)
+	if len(hashBytes) != AddressLength {
+		return nil
+	}
+	var rawAddr [AddressLength]byte
+	copy(rawAddr[:], hashBytes)
+	return &Address{rawAddress: rawAddr}
 }
 
-func Bytes2Hash(b []byte) *Hash {
+func NewHash(b []byte) *Hash {
 	a := &Hash{}
 	a.SetBytes(b)
 	return a
 }
 
-func String2Hash(s string) *Hash {
-	d := hexutil.Decode(s)
-	return Bytes2Hash(d)
+func NewHashByStr(s string) *Hash {
+	hashBytes, _ := HexDecodeString(s)
+	if len(hashBytes) != HashLength {
+		return nil
+	}
+	var rawHash [HashLength]byte
+	copy(rawHash[:], hashBytes)
+	return &Hash{rawHash: rawHash}
+}
+
+// HexDecodeString return rawBytes of a hex hash represent
+func HexDecodeString(s string) ([]byte, error) {
+	if len(s) > 2 && s[:2] == "0x" {
+		s = s[2:]
+	}
+	return hex.DecodeString(s)
 }
 
 func toCheckSum(a []byte) []byte {
