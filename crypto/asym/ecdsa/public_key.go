@@ -91,7 +91,7 @@ func (pub *PublicKey) Address() (*types.Address, error) {
 
 	ret := Keccak256(data[1:])
 
-	return types.Bytes2Address(ret[12:]), nil
+	return types.NewAddress(ret[12:]), nil
 }
 
 func (pub *PublicKey) Verify(digest []byte, sig []byte) (bool, error) {
