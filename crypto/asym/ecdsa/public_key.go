@@ -79,7 +79,7 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 	}
 
 	if pub.Type() == crypto.Secp256k1 {
-		rawKey := CompressPubkey(pub.K)
+		rawKey := FromECDSAPub(pub.K)
 		return rawKey, nil
 	}
 
