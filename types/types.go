@@ -66,6 +66,10 @@ func (h *Hash) String() string {
 	return h.hash
 }
 
+func (h *Hash) Reset() { *h = Hash{} }
+
+func (h *Hash) ProtoMessage() {}
+
 func (h *Hash) MarshalTo(data []byte) (int, error) {
 	data = data[:h.Size()]
 	copy(data, h.rawHash[:])
@@ -139,6 +143,10 @@ func (a *Address) String() string {
 	}
 	return a.address
 }
+
+func (a *Address) Reset() { *a = Address{} }
+
+func (a *Address) ProtoMessage() {}
 
 func (a *Address) Size() int {
 	return AddressLength
