@@ -46,47 +46,23 @@ func TestGenerateKey(t *testing.T) {
 	require.Nil(t, err)
 }
 
-//func TestPublicKey(t *testing.T) {
-//	privKeyK1, err := GenerateKey(Secp256k1)
-//	require.Nil(t, err)
-//
-//	pubKeyK1 := privKeyK1.PublicKey()
-//	_, err = pubKeyK1.Bytes()
-//	require.Nil(t, err)
-//
-//	_, err = pubKeyK1.Address()
-//	require.Nil(t, err)
-//
-//	digest := sha256.Sum256(msg)
-//
-//	sig, err := privKeyK1.Sign(digest[:])
-//	require.Nil(t, err)
-//
-//	isOK, err := pubKeyK1.Verify(digest[:], sig)
-//	require.Nil(t, err)
-//	require.Equal(t, true, isOK)
-//}
+func TestPublicKey(t *testing.T) {
+	privKeyK1, err := New(crypto.Secp256k1)
+	require.Nil(t, err)
 
-//func TestUnmarshalPrivateKey(t *testing.T) {
-//	priv, err := GenerateKey(Secp256k1)
-//	require.Nil(t, err)
-//
-//	bs, err := priv.Bytes()
-//	require.Nil(t, err)
-//
-//	pri, err := UnmarshalPrivateKey(bs, Secp256k1)
-//	require.Nil(t, err)
-//
-//	body, err := pri.Bytes()
-//	require.Nil(t, err)
-//
-//	require.Equal(t, bs, body)
-//
-//	add, err := priv.PublicKey().Address()
-//	require.Nil(t, err)
-//
-//	addr, err := pri.PublicKey().Address()
-//	require.Nil(t, err)
-//
-//	require.Equal(t, add, addr)
-//}
+	pubKeyK1 := privKeyK1.PublicKey()
+	pubBytes, err := pubKeyK1.Bytes()
+	require.Nil(t, err)
+
+	_, err = pubKeyK1.Address()
+	require.Nil(t, err)
+
+	restoredPubKey, err := UnmarshalPublicKey(pubBytes, crypto.Secp256k1)
+	require.Nil(t, err)
+
+	addr1, err := pubKeyK1.Address()
+	require.Nil(t, err)
+	addr2, err := restoredPubKey.Address()
+	require.Nil(t, err)
+	require.Equal(t, addr1, addr2)
+}
