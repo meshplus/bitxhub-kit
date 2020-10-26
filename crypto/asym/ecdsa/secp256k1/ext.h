@@ -53,7 +53,7 @@ static int secp256k1_ext_ecdsa_verify(
 	secp256k1_ecdsa_signature sig;
 	secp256k1_pubkey pubkey;
 
-	if (!secp256k1_ecdsa_signature_parse_compact(ctx, &sig, sigdata)) {
+	if (!bxh_secp256k1_ecdsa_signature_parse_compact(ctx, &sig, sigdata)) {
 		return 0;
 	}
 	if (!bxh_secp256k1_ec_pubkey_parse(ctx, &pubkey, pubkeydata, pubkeylen)) {
@@ -89,7 +89,7 @@ static int secp256k1_ext_reencode_pubkey(
 	return bxh_secp256k1_ec_pubkey_serialize(ctx, out, &outlen, &pubkey, flag);
 }
 
-// secp256k1_ext_scalar_mul multiplies a point by a scalar in constant time.
+// bxh_secp256k1_ext_scalar_mul multiplies a point by a scalar in constant time.
 //
 // Returns: 1: multiplication was successful
 //          0: scalar was invalid (zero or overflow)
@@ -98,7 +98,7 @@ static int secp256k1_ext_reencode_pubkey(
 //  In:     point:    pointer to a 64-byte public point,
 //                    encoded as two 256bit big-endian numbers.
 //          scalar:   a 32-byte scalar with which to multiply the point
-int secp256k1_ext_scalar_mul(const secp256k1_context* ctx, unsigned char *point, const unsigned char *scalar) {
+int bxh_secp256k1_ext_scalar_mul(const secp256k1_context* ctx, unsigned char *point, const unsigned char *scalar) {
 	int ret = 0;
 	int overflow = 0;
 	secp256k1_fe feX, feY;
