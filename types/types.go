@@ -18,18 +18,18 @@ const (
 )
 
 type Hash struct {
-	rawHash [HashLength]byte
-	hash    string
+	RawHash [HashLength]byte
+	Hash    string
 }
 
 type Address struct {
-	rawAddress [AddressLength]byte
-	address    string
+	RawAddress [AddressLength]byte
+	Address    string
 }
 
 // CalculateHash hashes the values of a TestContent
 func (h *Hash) CalculateHash() ([]byte, error) {
-	return h.rawHash[:], nil
+	return h.RawHash[:], nil
 }
 
 // Equals tests for equality of two Contents
@@ -38,7 +38,7 @@ func (h *Hash) Equals(other mt.Content) (bool, error) {
 	if !ok {
 		return false, errors.New("parameter should be type TransactionHash")
 	}
-	return bytes.Equal(h.rawHash[:], tOther.rawHash[:]), nil
+	return bytes.Equal(h.RawHash[:], tOther.RawHash[:]), nil
 }
 
 func (h *Hash) SetBytes(b []byte) {
@@ -46,24 +46,24 @@ func (h *Hash) SetBytes(b []byte) {
 		b = b[len(b)-HashLength:]
 	}
 
-	copy(h.rawHash[HashLength-len(b):], b)
-	h.hash = ""
+	copy(h.RawHash[HashLength-len(b):], b)
+	h.Hash = ""
 }
 
 func (h *Hash) SetString(s string) {
-	h.hash = s
+	h.Hash = s
 }
 
 func (h *Hash) Bytes() []byte {
-	return h.rawHash[:]
+	return h.RawHash[:]
 }
 
 func (h *Hash) String() string {
-	if h.hash == "" {
+	if h.Hash == "" {
 		// if hash field is empty, initialize it for only once
-		h.hash = "0x" + string(toCheckSum(h.rawHash[:]))
+		h.Hash = "0x" + string(toCheckSum(h.RawHash[:]))
 	}
-	return h.hash
+	return h.Hash
 }
 
 func (h *Hash) Reset() { *h = Hash{} }
@@ -72,7 +72,7 @@ func (h *Hash) ProtoMessage() {}
 
 func (h *Hash) MarshalTo(data []byte) (int, error) {
 	data = data[:h.Size()]
-	copy(data, h.rawHash[:])
+	copy(data, h.RawHash[:])
 
 	return h.Size(), nil
 }
@@ -112,7 +112,7 @@ func (h *Hash) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	copy(h.rawHash[:], ret)
+	copy(h.RawHash[:], ret)
 
 	return nil
 }
@@ -123,25 +123,25 @@ func (a *Address) SetBytes(b []byte) {
 	if len(b) > AddressLength {
 		b = b[len(b)-AddressLength:]
 	}
-	copy(a.rawAddress[AddressLength-len(b):], b)
-	a.address = ""
+	copy(a.RawAddress[AddressLength-len(b):], b)
+	a.Address = ""
 }
 
 func (a *Address) SetString(s string) {
-	a.address = s
+	a.Address = s
 }
 
 func (a *Address) Bytes() []byte {
-	return a.rawAddress[:]
+	return a.RawAddress[:]
 }
 
 // String returns an EIP55-compliant hex string representation of the address.
 func (a *Address) String() string {
-	if a.address == "" {
+	if a.Address == "" {
 		// if address field is empty, initialize it for only once
-		a.address = "0x" + string(toCheckSum(a.rawAddress[:]))
+		a.Address = "0x" + string(toCheckSum(a.RawAddress[:]))
 	}
-	return a.address
+	return a.Address
 }
 
 func (a *Address) Reset() { *a = Address{} }
@@ -154,7 +154,7 @@ func (a *Address) Size() int {
 
 func (a *Address) MarshalTo(data []byte) (int, error) {
 	data = data[:a.Size()]
-	copy(data, a.rawAddress[:])
+	copy(data, a.RawAddress[:])
 
 	return a.Size(), nil
 }
@@ -184,7 +184,7 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("invalid address length, expected %d got %d bytes", 2*AddressLength, len(data))
 	}
 
-	n, err := hex.Decode(a.rawAddress[:], data)
+	n, err := hex.Decode(a.RawAddress[:], data)
 	if err != nil {
 		return err
 	}
@@ -205,10 +205,10 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 
 // Sets a to other
 func (a *Address) Set(other *Address) {
-	for i, v := range other.rawAddress {
-		a.rawAddress[i] = v
+	for i, v := range other.RawAddress {
+		a.RawAddress[i] = v
 	}
-	a.address = ""
+	a.Address = ""
 }
 
 // BytesToAddress returns Address with value b.
@@ -226,7 +226,7 @@ func NewAddressByStr(s string) *Address {
 	}
 	var rawAddr [AddressLength]byte
 	copy(rawAddr[:], hashBytes)
-	return &Address{rawAddress: rawAddr}
+	return &Address{RawAddress: rawAddr}
 }
 
 func NewHash(b []byte) *Hash {
@@ -242,7 +242,7 @@ func NewHashByStr(s string) *Hash {
 	}
 	var rawHash [HashLength]byte
 	copy(rawHash[:], hashBytes)
-	return &Hash{rawHash: rawHash}
+	return &Hash{RawHash: rawHash}
 }
 
 // HexDecodeString return rawBytes of a hex hash represent
