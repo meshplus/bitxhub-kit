@@ -23,7 +23,7 @@ func TestHash(t *testing.T) {
 	// test address SetBytes and Set
 	hash2 := &Hash{}
 	hash2.SetBytes(hash1.Bytes())
-	require.Equal(t, true, bytes.Equal(hash1.rawHash[:], hash2.Bytes()))
+	require.Equal(t, true, bytes.Equal(hash1.RawHash[:], hash2.Bytes()))
 	require.Equal(t, hash1.String(), hash2.String())
 	require.Equal(t, hash1.String(), hash2.String())
 
@@ -36,7 +36,7 @@ func TestHash(t *testing.T) {
 	hash3 := &Hash{}
 	err = hash3.Unmarshal(encode)
 	require.Nil(t, err)
-	require.Equal(t, true, bytes.Equal(hash1.rawHash[:], hash3.Bytes()))
+	require.Equal(t, true, bytes.Equal(hash1.RawHash[:], hash3.Bytes()))
 	require.Equal(t, hash1.String(), hash3.String())
 	require.Equal(t, hash1.String(), hash3.String())
 
@@ -48,7 +48,7 @@ func TestHash(t *testing.T) {
 	hash4 := &Hash{}
 	err = hash4.UnmarshalJSON(encode2)
 	require.Nil(t, err)
-	require.Equal(t, true, bytes.Equal(hash1.rawHash[:], hash4.Bytes()))
+	require.Equal(t, true, bytes.Equal(hash1.RawHash[:], hash4.Bytes()))
 	require.Equal(t, hash1.String(), hash4.String())
 	require.Equal(t, hash1.String(), hash4.String())
 
@@ -72,7 +72,7 @@ func TestAddress(t *testing.T) {
 	// test address SetBytes and Set
 	addr2 := &Address{}
 	addr2.SetBytes(addr1.Bytes())
-	require.Equal(t, true, bytes.Equal(addr1.rawAddress[:], addr2.Bytes()))
+	require.Equal(t, true, bytes.Equal(addr1.RawAddress[:], addr2.Bytes()))
 	require.Equal(t, addr1.String(), addr2.String())
 	require.Equal(t, addr1.String(), addr2.String())
 
@@ -85,7 +85,7 @@ func TestAddress(t *testing.T) {
 	addr3 := &Address{}
 	err = addr3.Unmarshal(encode)
 	require.Nil(t, err)
-	require.Equal(t, true, bytes.Equal(addr1.rawAddress[:], addr3.Bytes()))
+	require.Equal(t, true, bytes.Equal(addr1.RawAddress[:], addr3.Bytes()))
 	require.Equal(t, addr1.String(), addr3.String())
 	require.Equal(t, addr1.String(), addr3.String())
 
@@ -97,7 +97,7 @@ func TestAddress(t *testing.T) {
 	addr4 := &Address{}
 	err = addr4.UnmarshalJSON(encode2)
 	require.Nil(t, err)
-	require.Equal(t, true, bytes.Equal(addr1.rawAddress[:], addr4.Bytes()))
+	require.Equal(t, true, bytes.Equal(addr1.RawAddress[:], addr4.Bytes()))
 	require.Equal(t, addr1.String(), addr4.String())
 	require.Equal(t, addr1.String(), addr4.String())
 
