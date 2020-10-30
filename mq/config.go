@@ -11,6 +11,7 @@ type Config struct {
 	exchange     string
 	exchangeType string
 	queueName    string
+	routingKey   string
 	logger       *logrus.Entry
 	handler      MessageHandler
 }
@@ -53,6 +54,12 @@ func WithLogger(logger *logrus.Entry) Option {
 	}
 }
 
+func WithRoutingKey(routingKey string) Option {
+	return func(config *Config) {
+		config.routingKey = routingKey
+	}
+}
+
 func generateConfig(opts ...Option) (*Config, error) {
 	config := &Config{}
 	for _, opt := range opts {
@@ -71,6 +78,10 @@ func generateConfig(opts ...Option) (*Config, error) {
 
 	if config.logger == nil {
 		return nil, fmt.Errorf("logger is nil")
+	}
+
+	if config.routingKey == "" {
+		config.routingKey = "MQLog"
 	}
 
 	return config, nil
