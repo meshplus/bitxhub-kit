@@ -41,7 +41,7 @@ func NewConsumer(opts ...Option) (*Consumer, error) {
 		exchange:     config.exchange,
 		logger:       config.logger,
 		exchangeType: config.exchangeType,
-		routingKey:   "MQLog",
+		routingKey:   config.routingKey,
 		conn:         nil,
 		channel:      nil,
 		tag:          "simple-consumer",
