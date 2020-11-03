@@ -1,6 +1,7 @@
 package mq
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,8 +26,10 @@ type Consumer struct {
 	conn         *amqp.Connection
 	channel      *amqp.Channel
 	tag          string
-	close        chan struct{}
+	begin        chan struct{}
 	msgH         MessageHandler
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
 func NewConsumer(opts ...Option) (*Consumer, error) {
@@ -35,18 +38,21 @@ func NewConsumer(opts ...Option) (*Consumer, error) {
 		return nil, fmt.Errorf("wrong config: %w", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &Consumer{
 		uri:          config.uri,
 		queueName:    config.queueName,
 		exchange:     config.exchange,
 		logger:       config.logger,
-		exchangeType: "direct",
+		exchangeType: config.exchangeType,
 		routingKey:   "MQLog",
 		conn:         nil,
 		channel:      nil,
 		tag:          "simple-consumer",
-		close:        make(chan struct{}),
+		begin:        make(chan struct{}),
 		msgH:         config.handler,
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 
 	return c, nil
@@ -55,17 +61,23 @@ func NewConsumer(opts ...Option) (*Consumer, error) {
 func (c *Consumer) Start() error {
 	go func() {
 		for {
-			time.Sleep(3 * time.Second)
-			if err := c.setup(); err != nil {
-				logger.Infof("Set up MQ consumer: %s", err.Error())
-				continue
-			}
+			select {
+			case <-c.ctx.Done():
+				logger.Info("MQ consumer closed")
+				return
+			case <-c.begin:
+				time.Sleep(3 * time.Second)
+				if err := c.setup(); err != nil {
+					logger.Infof("Set up MQ consumer: %s", err.Error())
+					continue
+				}
 
-			c.logger.Info("MQ consumer started")
-			<-c.close
+				c.logger.Info("MQ consumer started")
+			}
 		}
 	}()
 
+	c.begin <- struct{}{}
 	return nil
 }
 
@@ -110,13 +122,15 @@ func (c *Consumer) setup() error {
 }
 
 func (c *Consumer) Stop() error {
-	// will close() the deliveries channel
+	c.cancel()
+
+	// will begin() the deliveries channel
 	if err := c.channel.Cancel(c.tag, true); err != nil {
 		return fmt.Errorf("consumer cancel: %w", err)
 	}
 
 	if err := c.conn.Close(); err != nil {
-		return fmt.Errorf("amqp connection close: %w", err)
+		return fmt.Errorf("amqp connection begin: %w", err)
 	}
 
 	return nil
@@ -132,6 +146,5 @@ func (c *Consumer) handle(deliveries <-chan amqp.Delivery) {
 	}
 
 	c.logger.Info("deliveries channel closed")
-
-	c.close <- struct{}{}
+	c.begin <- struct{}{}
 }
