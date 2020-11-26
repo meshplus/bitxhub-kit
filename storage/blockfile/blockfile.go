@@ -12,6 +12,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	storageRoot = "/storage/blockfile"
+)
+
 type BlockFile struct {
 	blocks uint64 // Number of blocks
 
@@ -29,7 +33,12 @@ func NewBlockFile(repoRoot string, logger logrus.FieldLogger) (*BlockFile, error
 			return nil, fmt.Errorf("symbolic link datadir is not supported")
 		}
 	}
-	lock, _, err := fileutil.Flock(filepath.Join(repoRoot, "FLOCK"))
+	blockFileRoot := repoRoot + storageRoot
+	err := os.MkdirAll(blockFileRoot, 0755)
+	if err != nil {
+		return nil, err
+	}
+	lock, _, err := fileutil.Flock(filepath.Join(blockFileRoot, "FLOCK"))
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +48,7 @@ func NewBlockFile(repoRoot string, logger logrus.FieldLogger) (*BlockFile, error
 		logger:       logger,
 	}
 	for name := range BlockFileSchema {
-		table, err := newTable(repoRoot, name, 2*1000*1000*1000, logger)
+		table, err := newTable(blockFileRoot, name, 2*1000*1000*1000, logger)
 		if err != nil {
 			for _, table := range blockfile.tables {
 				table.Close()
