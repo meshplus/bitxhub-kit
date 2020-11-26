@@ -8,4 +8,4 @@ See [CONTRIBUTING.md](https://github.com/meshplus/bitxhub-kit/blob/master/CONTRI
 
 ## License
 
-[Apache-2.0](https://github.com/meshplus/bitxhub-kit/blob/master/LICENSE)
+ GNU Lesser General Public License v3.0(https://github.com/meshplus/bitxhub-kit/blob/master/LICENSE)
