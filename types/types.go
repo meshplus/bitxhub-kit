@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	mt "github.com/cbergoon/merkletree"
+	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -18,13 +19,29 @@ const (
 )
 
 type Hash struct {
-	RawHash [HashLength]byte
-	Hash    string
+	RawHash [HashLength]byte `json:"raw_hash"`
+	Hash    string           `json:"hash"`
 }
 
 type Address struct {
-	RawAddress [AddressLength]byte
-	Address    string
+	RawAddress [AddressLength]byte `json:"raw_address"`
+	Address    string              `json:"address"`
+}
+
+func (h *Hash) MarshalJSONPB(m *jsonpb.Marshaler) ([]byte, error) {
+	return h.MarshalJSON()
+}
+
+func (h *Hash) UnmarshalJSONPB(m *jsonpb.Unmarshaler, data []byte) error {
+	return h.UnmarshalJSON(data)
+}
+
+func (a *Address) MarshalJSONPB(m *jsonpb.Marshaler) ([]byte, error) {
+	return a.MarshalJSON()
+}
+
+func (a *Address) UnmarshalJSONPB(m *jsonpb.Unmarshaler, data []byte) error {
+	return a.UnmarshalJSON(data)
 }
 
 // CalculateHash hashes the values of a TestContent
