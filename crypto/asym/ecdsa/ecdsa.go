@@ -129,7 +129,10 @@ func UnmarshalPrivateKey(data []byte, opt crypto.KeyType) (*PrivateKey, error) {
 		err  error
 	)
 	if opt == crypto.Secp256k1 {
-		Secp256k1Key, _ := ToECDSA(data)
+		Secp256k1Key, err := ToECDSA(data)
+		if err != nil {
+			return nil, fmt.Errorf("not supported format: %w", err)
+		}
 		priv = Secp256k1Key
 	} else {
 		priv, err = x509.ParseECPrivateKey(data)
