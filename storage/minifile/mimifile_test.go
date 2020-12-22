@@ -15,12 +15,21 @@ func TestNewBatchFile(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, path, b.path)
 
+	err = b.Close()
+	assert.Nil(t, err)
+
 	b, err = New("")
+	assert.Nil(t, err)
+
+	err = b.Close()
 	assert.Nil(t, err)
 
 	b, err = New(".")
 	assert.Nil(t, err)
 	assert.NotEqual(t, ".", b.path)
+
+	b, err = New(".")
+	assert.NotNil(t, err)
 }
 
 func TestBatchFile_Put(t *testing.T) {
@@ -70,18 +79,17 @@ func TestBatchFile_Prefix(t *testing.T) {
 	err = b.Put("2", val)
 	assert.Nil(t, err)
 
-	files, err := b.Prefix(prefix)
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(files))
-
-	files, err = b.Prefix("")
+	files, err := b.GetAll()
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(files))
 
 	err = b.DeleteAll()
 	assert.Nil(t, err)
 
-	files, err = b.Prefix(prefix)
+	m, err := b.GetAll()
 	assert.Nil(t, err)
-	assert.Equal(t, 0, len(files))
+	assert.Equal(t, 0, len(m))
+
+	err = b.Close()
+	assert.Nil(t, err)
 }
