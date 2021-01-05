@@ -1,7 +1,9 @@
 package minifile
 
 import (
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,4 +94,37 @@ func TestBatchFile_Prefix(t *testing.T) {
 
 	err = b.Close()
 	assert.Nil(t, err)
+}
+
+func BenchmarkMiniFile_Get(b *testing.B) {
+	path, err := ioutil.TempDir("", "*")
+	assert.Nil(b, err)
+
+	f, err := New(path)
+	assert.Nil(b, err)
+
+	val := make([]byte, 1024*1024*1)
+	for k := 0; k < len(val); k++ {
+		val[k] = byte(rand.Int63n(128))
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 10; j++ {
+			key := fmt.Sprintf("abc%d.%d", i, j)
+			err = f.Put(key, val)
+			assert.Nil(b, err)
+
+			v, e := f.Get(key)
+			assert.Nil(b, e)
+			assert.Equal(b, val, v)
+		}
+
+		e := f.DeleteAll()
+		assert.Nil(b, e)
+	}
+
+	f.Close()
+
 }

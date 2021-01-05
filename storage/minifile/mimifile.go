@@ -1,6 +1,8 @@
 package minifile
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"sync/atomic"
 
 	"github.com/prometheus/tsdb/fileutil"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 type MiniFile struct {
@@ -64,6 +67,10 @@ func (mf *MiniFile) Put(key string, value []byte) error {
 		return fmt.Errorf("store file with empty key")
 	}
 
+	crc := make([]byte, 4)
+	binary.LittleEndian.PutUint32(crc, util.NewCRC(value).Value())
+	value = append(value, crc...)
+
 	mf.lock.RLock()
 	defer mf.lock.RUnlock()
 
@@ -111,15 +118,25 @@ func (mf *MiniFile) Get(key string) ([]byte, error) {
 func (mf *MiniFile) get(key string) ([]byte, error) {
 	mf.namedLock.RLock(key)
 
-	val, err := ioutil.ReadFile(filepath.Join(mf.path, key))
+	name := filepath.Join(mf.path, key)
+	val, err := ioutil.ReadFile(name)
 	if err != nil && isNoFileError(err) {
-		mf.namedLock.RUnLock(key, true)
+		_ = mf.namedLock.RUnLock(key, true)
 		return nil, nil
 	}
 
-	mf.namedLock.RUnLock(key, false)
+	_ = mf.namedLock.RUnLock(key, false)
 
-	return val, err
+	crc := make([]byte, 4)
+	binary.LittleEndian.PutUint32(crc, util.NewCRC(val[:len(val)-4]).Value())
+	if !bytes.Equal(crc, val[len(val)-4:]) {
+		mf.namedLock.Lock(key)
+		defer mf.namedLock.UnLock(key, true)
+		_ = os.Remove(name)
+		return nil, fmt.Errorf("CRC checksum is not correct for %s", key)
+	}
+
+	return val[:len(val)-4], err
 }
 
 func (mf *MiniFile) Has(key string) (bool, error) {
