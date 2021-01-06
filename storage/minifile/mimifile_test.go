@@ -57,6 +57,17 @@ func TestBatchFile_Put(t *testing.T) {
 	v, e = b.Get(key)
 	assert.Nil(t, e)
 	assert.Nil(t, v)
+
+	key = "abc"
+	val = []byte{}
+
+	err = b.Put(key, val)
+	assert.Nil(t, err)
+
+	v, e = b.Get(key)
+	assert.Nil(t, e)
+	assert.Equal(t, val, v)
+
 }
 
 func TestBatchFile_Prefix(t *testing.T) {

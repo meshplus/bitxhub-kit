@@ -18,21 +18,8 @@ import (
 type MiniFile struct {
 	path         string
 	instanceLock fileutil.Releaser // File-system lock to prevent double opens
-	namedLock    *NamedLock
-	lock         *sync.RWMutex
+	lock         *sync.Mutex
 	closed       int64
-}
-
-type NamedLock struct {
-	lock  *sync.RWMutex
-	locks map[string]*sync.RWMutex
-}
-
-func NewNamedLock() *NamedLock {
-	return &NamedLock{
-		lock:  &sync.RWMutex{},
-		locks: make(map[string]*sync.RWMutex),
-	}
 }
 
 func New(path string) (*MiniFile, error) {
@@ -53,8 +40,7 @@ func New(path string) (*MiniFile, error) {
 	return &MiniFile{
 		path:         abs,
 		instanceLock: flock,
-		lock:         &sync.RWMutex{},
-		namedLock:    NewNamedLock(),
+		lock:         &sync.Mutex{},
 	}, nil
 }
 
@@ -71,11 +57,8 @@ func (mf *MiniFile) Put(key string, value []byte) error {
 	binary.LittleEndian.PutUint32(crc, util.NewCRC(value).Value())
 	value = append(value, crc...)
 
-	mf.lock.RLock()
-	defer mf.lock.RUnlock()
-
-	mf.namedLock.Lock(key)
-	defer mf.namedLock.UnLock(key, false)
+	mf.lock.Lock()
+	defer mf.lock.Unlock()
 
 	name := filepath.Join(mf.path, key)
 
@@ -91,11 +74,8 @@ func (mf *MiniFile) Delete(key string) error {
 		return fmt.Errorf("the miniFile storage is closed")
 	}
 
-	mf.lock.RLock()
-	defer mf.lock.RUnlock()
-
-	mf.namedLock.Lock(key)
-	defer mf.namedLock.UnLock(key, true)
+	mf.lock.Lock()
+	defer mf.lock.Unlock()
 
 	err := os.Remove(filepath.Join(mf.path, key))
 	if err != nil && isNoFileError(err) {
@@ -104,39 +84,45 @@ func (mf *MiniFile) Delete(key string) error {
 
 	return err
 }
+
 func (mf *MiniFile) Get(key string) ([]byte, error) {
 	if mf.isClosed() {
 		return nil, fmt.Errorf("the miniFile storage is closed")
 	}
 
-	mf.lock.RLock()
-	defer mf.lock.RUnlock()
+	mf.lock.Lock()
+	defer mf.lock.Unlock()
 
-	return mf.get(key)
+	val, err := mf.get(key)
+	if err != nil {
+		_ = os.Remove(filepath.Join(mf.path, key))
+		return nil, err
+	}
+
+	return val, nil
 }
 
 func (mf *MiniFile) get(key string) ([]byte, error) {
-	mf.namedLock.RLock(key)
-
 	name := filepath.Join(mf.path, key)
 	val, err := ioutil.ReadFile(name)
-	if err != nil && isNoFileError(err) {
-		_ = mf.namedLock.RUnLock(key, true)
-		return nil, nil
+	if err != nil {
+		if isNoFileError(err) {
+			return nil, nil
+		}
+		return nil, err
 	}
 
-	_ = mf.namedLock.RUnLock(key, false)
+	if len(val) < 4 {
+		return nil, fmt.Errorf("file %s is corrupted", key)
+	}
 
 	crc := make([]byte, 4)
 	binary.LittleEndian.PutUint32(crc, util.NewCRC(val[:len(val)-4]).Value())
 	if !bytes.Equal(crc, val[len(val)-4:]) {
-		mf.namedLock.Lock(key)
-		defer mf.namedLock.UnLock(key, true)
-		_ = os.Remove(name)
 		return nil, fmt.Errorf("CRC checksum is not correct for %s", key)
 	}
 
-	return val[:len(val)-4], err
+	return val[:len(val)-4], nil
 }
 
 func (mf *MiniFile) Has(key string) (bool, error) {
@@ -174,6 +160,7 @@ func (mf *MiniFile) GetAll() (map[string][]byte, error) {
 	for _, file := range files {
 		val, err := mf.get(file)
 		if err != nil {
+			_ = os.Remove(filepath.Join(mf.path, file))
 			return nil, err
 		}
 
@@ -191,11 +178,18 @@ func (mf *MiniFile) DeleteAll() error {
 	mf.lock.Lock()
 	defer mf.lock.Unlock()
 
-	if err := os.RemoveAll(mf.path); err != nil {
+	files, err := mf.prefix("")
+	if err != nil {
 		return err
 	}
 
-	_ = os.MkdirAll(mf.path, 0755)
+	for _, file := range files {
+		err := os.Remove(filepath.Join(mf.path, file))
+		if err != nil && !isNoFileError(err) {
+			return fmt.Errorf("remove file %s failed: %w", file, err)
+		}
+	}
+
 	return nil
 }
 
@@ -227,81 +221,4 @@ func isNoFileError(err error) bool {
 
 func (mf *MiniFile) isClosed() bool {
 	return atomic.LoadInt64(&mf.closed) == 1
-}
-
-func (nl *NamedLock) RLock(key string) {
-	nl.lock.Lock()
-	defer nl.lock.Unlock()
-
-	lock, ok := nl.locks[key]
-	if !ok {
-		lock = &sync.RWMutex{}
-		nl.locks[key] = lock
-	}
-
-	lock.RLock()
-}
-
-func (nl *NamedLock) RUnLock(key string, delLock bool) error {
-	nl.lock.Lock()
-	defer nl.lock.Unlock()
-
-	lock, ok := nl.locks[key]
-	if !ok {
-		return fmt.Errorf("cannot get lock for %s", key)
-	}
-
-	lock.RUnlock()
-
-	if delLock {
-		delete(nl.locks, key)
-	}
-
-	return nil
-}
-
-func (nl *NamedLock) Lock(key string) {
-	nl.lock.Lock()
-	defer nl.lock.Unlock()
-
-	lock, ok := nl.locks[key]
-	if !ok {
-		lock = &sync.RWMutex{}
-		nl.locks[key] = lock
-	}
-
-	lock.Lock()
-}
-
-func (nl *NamedLock) UnLock(key string, delLock bool) error {
-	nl.lock.Lock()
-	defer nl.lock.Unlock()
-
-	lock, ok := nl.locks[key]
-	if !ok {
-		return fmt.Errorf("cannot get lock for %s", key)
-	}
-
-	lock.Unlock()
-
-	if delLock {
-		delete(nl.locks, key)
-	}
-
-	return nil
-}
-
-func (nl *NamedLock) LockAll() {
-	nl.lock.RLock()
-	defer nl.lock.RUnlock()
-
-	for _, lock := range nl.locks {
-		lock.Lock()
-	}
-}
-
-func (nl *NamedLock) UnlockAll() {
-	for _, lock := range nl.locks {
-		lock.Unlock()
-	}
 }
