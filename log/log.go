@@ -30,7 +30,7 @@ func New() *logrus.Logger {
 
 	formatter := &logrus.TextFormatter{
 		FullTimestamp:   true,
-		TimestampFormat: "15:04:05.000",
+		TimestampFormat: "2006-01-02T15:04:05.000",
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			_, filename := filepath.Split(f.File)
 			return "", fmt.Sprintf("%12s:%-4d", filename, f.Line)
