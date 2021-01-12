@@ -3,6 +3,7 @@ package leveldb
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -276,4 +277,37 @@ func TestLdb_Prev(t *testing.T) {
 		assert.EqualValues(t, []byte(fmt.Sprintf("key%d", i)), iter.Key())
 		i--
 	}
+}
+
+func BenchmarkLdb_Get(b *testing.B) {
+	path, err := ioutil.TempDir("", "*")
+	assert.Nil(b, err)
+
+	ldb, err := New(path)
+	assert.Nil(b, err)
+
+	val := make([]byte, 1024*1024*1)
+	for k := 0; k < len(val); k++ {
+		val[k] = byte(rand.Int63n(128))
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 10; j++ {
+			key := fmt.Sprintf("abc.%d.%d", i, j)
+			ldb.Put([]byte(key), val)
+
+			v := ldb.Get([]byte(key))
+			assert.Equal(b, val, v)
+		}
+
+		iterator := ldb.Prefix([]byte("abc"))
+		for iterator.Next() {
+			ldb.Delete(iterator.Key())
+		}
+	}
+
+	ldb.Close()
+
 }
