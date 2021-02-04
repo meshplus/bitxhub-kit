@@ -6,7 +6,7 @@ require (
 	github.com/cbergoon/merkletree v0.2.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0 // indirect
+	github.com/golang/protobuf v1.4.0
 	github.com/golang/snappy v0.0.2-0.20200707131729-196ae77b8a26 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2-0.20160603034137-1fa385a6f458 // indirect

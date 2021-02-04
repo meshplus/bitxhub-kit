@@ -443,6 +443,13 @@ func (b *BlockTable) releaseFile(num uint32) {
 	}
 }
 
+func (b *BlockTable) Sync() error {
+	if err := b.index.Sync(); err != nil {
+		return err
+	}
+	return b.head.Sync()
+}
+
 func truncateBlockFile(file *os.File, size int64) error {
 	if err := file.Truncate(size); err != nil {
 		return err

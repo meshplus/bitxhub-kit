@@ -48,7 +48,7 @@ func NewBlockFile(repoRoot string, logger logrus.FieldLogger) (*BlockFile, error
 		logger:       logger,
 	}
 	for name := range BlockFileSchema {
-		table, err := newTable(blockFileRoot, name, 2*1000*1000*1000, logger)
+		table, err := newTable(blockFileRoot, name, 2*1000*1000*100, logger)
 		if err != nil {
 			for _, table := range blockfile.tables {
 				table.Close()
@@ -183,6 +183,19 @@ func (bf *BlockFile) Close() error {
 			errs = append(errs, err)
 		}
 	})
+	if errs != nil {
+		return fmt.Errorf("%v", errs)
+	}
+	return nil
+}
+
+func (bf *BlockFile) Sync() error {
+	var errs []error
+	for _, table := range bf.tables {
+		if err := table.Sync(); err != nil {
+			errs = append(errs, err)
+		}
+	}
 	if errs != nil {
 		return fmt.Errorf("%v", errs)
 	}
