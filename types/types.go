@@ -354,6 +354,19 @@ func (b *Bloom) Unmarshal(data []byte) error {
 	return nil
 }
 
+// Add adds d to the filter. Future calls of Test(d) will return true.
+func (b *Bloom) Add(d []byte) {
+	b.add(d, make([]byte, 6))
+}
+
+// add is internal version of Add, which takes a scratch buffer for reuse (needs to be at least 6 bytes)
+func (b *Bloom) add(d []byte, buf []byte) {
+	i1, v1, i2, v2, i3, v3 := bloomValues(d, buf)
+	b[i1] |= v1
+	b[i2] |= v2
+	b[i3] |= v3
+}
+
 // Test checks if the given topic is present in the bloom filter
 func (b Bloom) Test(topic []byte) bool {
 	i1, v1, i2, v2, i3, v3 := bloomValues(topic, make([]byte, 6))
