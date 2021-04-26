@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	mt "github.com/cbergoon/merkletree"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/crypto/sha3"
@@ -352,6 +353,29 @@ func (b *Bloom) Unmarshal(data []byte) error {
 	copy(b[:], data)
 
 	return nil
+}
+
+// Add adds d to the filter. Future calls of Test(d) will return true.
+func (b *Bloom) Add(d []byte) {
+	b.add(d, make([]byte, 6))
+}
+
+// add is internal version of Add, which takes a scratch buffer for reuse (needs to be at least 6 bytes)
+func (b *Bloom) add(d []byte, buf []byte) {
+	i1, v1, i2, v2, i3, v3 := bloomValues(d, buf)
+	b[i1] |= v1
+	b[i2] |= v2
+	b[i3] |= v3
+}
+
+// MarshalText encodes b as a hex string with 0x prefix.
+func (b Bloom) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(b[:]).MarshalText()
+}
+
+// UnmarshalText b as a hex string with 0x prefix.
+func (b *Bloom) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("Bloom", input, b[:])
 }
 
 // Test checks if the given topic is present in the bloom filter
