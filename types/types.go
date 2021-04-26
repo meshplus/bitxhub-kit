@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	mt "github.com/cbergoon/merkletree"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/crypto/sha3"
@@ -365,6 +366,16 @@ func (b *Bloom) add(d []byte, buf []byte) {
 	b[i1] |= v1
 	b[i2] |= v2
 	b[i3] |= v3
+}
+
+// MarshalText encodes b as a hex string with 0x prefix.
+func (b Bloom) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(b[:]).MarshalText()
+}
+
+// UnmarshalText b as a hex string with 0x prefix.
+func (b *Bloom) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("Bloom", input, b[:])
 }
 
 // Test checks if the given topic is present in the bloom filter
