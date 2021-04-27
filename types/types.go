@@ -56,6 +56,14 @@ func (a *Address) UnmarshalJSONPB(m *jsonpb.Unmarshaler, data []byte) error {
 	return a.UnmarshalJSON(data)
 }
 
+func (b *Bloom) MarshalJSONPB(m *jsonpb.Marshaler) ([]byte, error) {
+	return b.MarshalJSON()
+}
+
+func (b *Bloom) UnmarshalJSONPB(m *jsonpb.Unmarshaler, data []byte) error {
+	return b.UnmarshalJSON(data)
+}
+
 // CalculateHash hashes the values of a TestContent
 func (h *Hash) CalculateHash() ([]byte, error) {
 	return h.RawHash[:], nil
@@ -376,6 +384,18 @@ func (b Bloom) MarshalText() ([]byte, error) {
 // UnmarshalText b as a hex string with 0x prefix.
 func (b *Bloom) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("Bloom", input, b[:])
+}
+
+// Serialize given bloom to JSON
+func (b *Bloom) MarshalJSON() ([]byte, error) {
+	return b[:], nil
+}
+
+// UnmarshalJSON parses a bloom
+func (b *Bloom) UnmarshalJSON(data []byte) error {
+	copy(b[:], data)
+
+	return nil
 }
 
 // Test checks if the given topic is present in the bloom filter
