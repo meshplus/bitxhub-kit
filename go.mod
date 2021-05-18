@@ -5,12 +5,10 @@ go 1.13
 require (
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cbergoon/merkletree v0.2.0
-	github.com/ethereum/go-ethereum v1.10.2
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
-	github.com/holiman/uint256 v1.1.1
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.2.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.0 // indirect
