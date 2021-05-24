@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	hash          = "0x9f41dd84524bf8a42f8ab58ecfca6e1752d6fd93fe8dc00af4c71963c97db59f"
+	hash0         = "0x9f41dd84524bf8a42f8ab58ecfca6e1752d6fd93fe8dc00af4c71963c97db59f"
 	formalHash    = "0x9f41DD84524bF8A42F8ab58eCFCA6E1752D6Fd93fE8dc00Af4c71963c97dB59f"
 	account       = "0x929545f44692178edb7fa468b44c5351596184ba"
 	formalAccount = "0x929545f44692178EDb7FA468B44c5351596184Ba"
 )
 
 func TestHash(t *testing.T) {
-	hash1 := NewHashByStr(hash)
+	hash1 := NewHashByStr(hash0)
 
 	require.Equal(t, formalHash, hash1.String())
 	require.Equal(t, formalHash, hash1.String())
@@ -113,7 +113,21 @@ func TestAddress(t *testing.T) {
 }
 
 func TestIsValidAddressByte(t *testing.T) {
-	require.Equal(t, false, IsValidAddressByte([]byte(hash)))
+	require.Equal(t, false, IsValidAddressByte([]byte(hash0)))
 	require.Equal(t, true, IsValidAddressByte([]byte(account)))
 	require.Equal(t, true, IsValidAddressByte([]byte(formalAccount)))
+}
+
+func TestBloom_MarshalTo(t *testing.T) {
+	bloom0 := Bloom{0, 1, 1}
+
+	data, err := bloom0.MarshalJSON()
+	require.Nil(t, err)
+
+	var bloom1 Bloom
+
+	err = bloom1.UnmarshalJSON(data)
+	require.Nil(t, err)
+
+	require.Equal(t, bloom0, bloom1)
 }
