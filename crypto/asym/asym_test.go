@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/meshplus/bitxhub-kit/crypto"
-	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,6 +15,7 @@ func TestSignAndVerifyPass(t *testing.T) {
 	testSignAndVerify(t, crypto.ECDSA_P384)
 	testSignAndVerify(t, crypto.ECDSA_P521)
 	testSignAndVerify(t, crypto.Secp256k1)
+	testSignAndVerify(t, crypto.SM2)
 }
 
 func TestSignAndFail(t *testing.T) {
@@ -23,6 +23,7 @@ func TestSignAndFail(t *testing.T) {
 	testSignAndVerifyFail(t, crypto.ECDSA_P384)
 	testSignAndVerifyFail(t, crypto.ECDSA_P521)
 	testSignAndVerifyFail(t, crypto.Secp256k1)
+	testSignAndVerifyFail(t, crypto.SM2)
 }
 
 func TestStorePrivateKey(t *testing.T) {
@@ -30,10 +31,11 @@ func TestStorePrivateKey(t *testing.T) {
 	testStore(t, crypto.ECDSA_P384)
 	testStore(t, crypto.ECDSA_P521)
 	testStore(t, crypto.Secp256k1)
+	testStore(t, crypto.SM2)
 }
 
 func testStore(t *testing.T, opt crypto.KeyType) {
-	key, err := ecdsa.New(opt)
+	key, err := GenerateKeyPair(opt)
 	require.Nil(t, err)
 
 	keyFile := filepath.Join(os.TempDir(), "priv.json")

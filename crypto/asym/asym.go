@@ -15,6 +15,7 @@ import (
 
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
+	"github.com/meshplus/bitxhub-kit/crypto/asym/gm"
 	"github.com/meshplus/bitxhub-kit/crypto/sym"
 	"github.com/meshplus/bitxhub-kit/types"
 )
@@ -25,6 +26,8 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 		return nil, fmt.Errorf("don`t support rsa algorithm currently")
 	case crypto.ECDSA_P256, crypto.ECDSA_P384, crypto.ECDSA_P521, crypto.Secp256k1:
 		return ecdsa.New(opt)
+	case crypto.SM2:
+		return gm.New(opt)
 	case crypto.Ed25519:
 		return nil, fmt.Errorf("don`t support ed25519 algorithm currently")
 	default:
@@ -33,7 +36,11 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 }
 
 func SupportedKeyType(typ crypto.KeyType) bool {
-	if typ == crypto.ECDSA_P256 || typ == crypto.ECDSA_P384 || typ == crypto.ECDSA_P521 || typ == crypto.Secp256k1 {
+	if typ == crypto.ECDSA_P256 ||
+		typ == crypto.ECDSA_P384 ||
+		typ == crypto.ECDSA_P521 ||
+		typ == crypto.Secp256k1 ||
+		typ == crypto.SM2 {
 		return true
 	}
 
@@ -114,11 +121,31 @@ func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, e
 		}
 
 		if expected.String() != from.String() {
-			return false, fmt.Errorf("wrong singer for this signature")
+			return false, fmt.Errorf("wrong signer for this signature")
 		}
 		return pubkey.Verify(digest, sig)
 	case crypto.Ed25519:
 		return false, fmt.Errorf("don`t support ed25519 algorithm currently")
+	case crypto.SM2:
+		if len(sig) < 65 {
+			return false, fmt.Errorf("signature is invalid")
+		}
+		pubKeyBytes := sig[:65]
+		pubkey, err := gm.UnmarshalPublicKey(pubKeyBytes, opt)
+		if err != nil {
+			return false, err
+		}
+
+		expected, err := pubkey.Address()
+		if err != nil {
+			return false, err
+		}
+
+		if expected.String() != from.String() {
+			return false, fmt.Errorf("wrong signer for this signature")
+		}
+
+		return pubkey.Verify(digest, sig[65:])
 	default:
 		return false, fmt.Errorf("wront algorithm type")
 	}
@@ -256,6 +283,8 @@ func RestorePrivateKey(keyFilePath, password string) (crypto.PrivateKey, error) 
 		return ecdsa.UnmarshalPrivateKey(rawBytes, keyStore.Type)
 	case crypto.Ed25519, crypto.RSA:
 		return nil, fmt.Errorf("don't support this private key")
+	case crypto.SM2:
+		return gm.UnmarshalPrivateKey(rawBytes, keyStore.Type)
 	default:
 		return nil, fmt.Errorf("don't support this private key")
 	}

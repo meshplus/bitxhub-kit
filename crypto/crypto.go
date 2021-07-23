@@ -17,6 +17,9 @@ const (
 	ECDSA_P256
 	ECDSA_P384
 	ECDSA_P521
+	SM2
+	SM4
+	SM9
 	Ed25519
 )
 
@@ -28,6 +31,9 @@ var CryptoNameType = map[string]KeyType{
 	"ECDSA_P256": ECDSA_P256,
 	"ECDSA_P384": ECDSA_P384,
 	"ECDSA_P521": ECDSA_P521,
+	"SM2":        SM2,
+	"SM4":        SM4,
+	"SM9":        SM9,
 	"Ed25519":    Ed25519,
 }
 
