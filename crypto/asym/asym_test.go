@@ -69,6 +69,14 @@ func testSignAndVerify(t *testing.T, opt crypto.KeyType) {
 	b, err := Verify(opt, sig, digest[:], *addr)
 	require.Nil(t, err)
 	require.Equal(t, true, b)
+
+	sig, err = SignWithType(priv, digest[:])
+	require.Nil(t, err)
+	require.Nil(t, err)
+
+	b, err = VerifyWithType(sig, digest[:], *addr)
+	require.Nil(t, err)
+	require.Equal(t, true, b)
 }
 
 func testSignAndVerifyFail(t *testing.T, opt crypto.KeyType) {

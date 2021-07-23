@@ -32,6 +32,46 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	}
 }
 
+func supportedKeyType(typ crypto.KeyType) bool {
+	if typ == crypto.ECDSA_P256 || typ == crypto.ECDSA_P384 || typ == crypto.ECDSA_P521 || typ == crypto.Secp256k1 {
+		return true
+	}
+
+	return false
+}
+
+// Sign signs digest using key k and add key type flag in the beginning.
+func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
+	if privKey == nil {
+		return nil, fmt.Errorf("private key is empty")
+	}
+
+	typ := privKey.Type()
+
+	if !supportedKeyType(typ) {
+		return nil, fmt.Errorf("key type %d is not supported", typ)
+	}
+
+	sig, err := privKey.Sign(digest)
+	if err != nil {
+		return nil, err
+	}
+
+	signature := []byte{byte(typ)}
+
+	return append(signature, sig...), nil
+}
+
+func VerifyWithType(sig, digest []byte, from types.Address) (bool, error) {
+	typ := crypto.KeyType(sig[0])
+
+	if !supportedKeyType(typ) {
+		return false, fmt.Errorf("key type %d is not supported", typ)
+	}
+
+	return Verify(typ, sig[1:], digest, from)
+}
+
 func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, error) {
 	switch opt {
 	case crypto.RSA:
