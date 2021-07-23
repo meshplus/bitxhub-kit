@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/meshplus/bitxhub-kit/types"
 )
@@ -18,6 +19,17 @@ const (
 	ECDSA_P521
 	Ed25519
 )
+
+var CryptoNameType = map[string]KeyType{
+	"AES":        AES,
+	"ThirdDES":   ThirdDES,
+	"RSA":        RSA,
+	"Secp256k1":  Secp256k1,
+	"ECDSA_P256": ECDSA_P256,
+	"ECDSA_P384": ECDSA_P384,
+	"ECDSA_P521": ECDSA_P521,
+	"Ed25519":    Ed25519,
+}
 
 type Key interface {
 	// Bytes returns a serialized, storable representation of this key
@@ -79,4 +91,13 @@ func (key *KeyStore) Pretty() (string, error) {
 	}
 
 	return string(ret), nil
+}
+
+func CryptoNameToType(name string) (KeyType, error) {
+	typ, ok := CryptoNameType[name]
+	if !ok {
+		return 0, fmt.Errorf("no type found for name %s", name)
+	}
+
+	return typ, nil
 }
