@@ -415,23 +415,3 @@ func bloomValues(data []byte, hashbuf []byte) (uint, byte, uint, byte, uint, byt
 
 	return i1, v1, i2, v2, i3, v3
 }
-
-func (b *Bloom) MarshalJSONPB(m *jsonpb.Marshaler) ([]byte, error) {
-	return b.MarshalJSON()
-}
-
-func (b *Bloom) UnmarshalJSONPB(m *jsonpb.Unmarshaler, data []byte) error {
-	return b.UnmarshalJSON(data)
-}
-
-// Serialize given bloom to JSON
-func (b *Bloom) MarshalJSON() ([]byte, error) {
-	return b[:], nil
-}
-
-// UnmarshalJSON parses a bloom
-func (b *Bloom) UnmarshalJSON(data []byte) error {
-	copy(b[:], data)
-
-	return nil
-}
