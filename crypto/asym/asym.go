@@ -19,6 +19,31 @@ import (
 	"github.com/meshplus/bitxhub-kit/types"
 )
 
+var CryptoM = make(map[crypto.KeyType]*Crypto)
+
+type CryptoConstructor func(opt crypto.KeyType) (crypto.PrivateKey, error)
+type CryptoVerify func(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, error)
+type CryptoUnmarshalPrivateKey func(data []byte, opt crypto.KeyType) (crypto.PrivateKey, error)
+type Crypto struct {
+	Constructor         CryptoConstructor
+	Verify              CryptoVerify
+	UnmarshalPrivateKey CryptoUnmarshalPrivateKey
+}
+
+func RegisterCrypto(typ crypto.KeyType, f CryptoConstructor, g CryptoVerify, k CryptoUnmarshalPrivateKey) {
+	CryptoM[typ].Constructor = f
+	CryptoM[typ].Verify = g
+	CryptoM[typ].UnmarshalPrivateKey = k
+}
+
+func GetCrypto(typ crypto.KeyType) (*Crypto, error) {
+	con, ok := CryptoM[typ]
+	if !ok {
+		return nil, fmt.Errorf("the algorithm is unsupported")
+	}
+	return con, nil
+}
+
 func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	switch opt {
 	case crypto.RSA:
@@ -27,9 +52,41 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 		return ecdsa.New(opt)
 	case crypto.Ed25519:
 		return nil, fmt.Errorf("don`t support ed25519 algorithm currently")
+	case crypto.SM2:
+		cryptoCon, err := GetCrypto(opt)
+		if err != nil {
+			return nil, err
+		}
+		return cryptoCon.Constructor(opt)
 	default:
-		return nil, fmt.Errorf("wront algorithm type")
+		return nil, fmt.Errorf("wrong algorithm type")
 	}
+}
+
+// Sign signs digest using key k and add key type flag in the beginning.
+func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
+	if privKey == nil {
+		return nil, fmt.Errorf("private key is empty")
+	}
+
+	typ := privKey.Type()
+
+	sig, err := privKey.Sign(digest)
+	if err != nil {
+		return nil, err
+	}
+
+	signature := []byte{byte(typ)}
+
+	return append(signature, sig...), nil
+}
+
+func VerifyWithType(sig, digest []byte, from types.Address) (bool, error) {
+	typ := crypto.KeyType(sig[0])
+
+	sign := sig[1:]
+
+	return Verify(typ, sign, digest, from)
 }
 
 func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, error) {
@@ -79,8 +136,14 @@ func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, e
 		return pubkey.Verify(digest, sig)
 	case crypto.Ed25519:
 		return false, fmt.Errorf("don`t support ed25519 algorithm currently")
+	case crypto.SM2:
+		cryptoCon, err := GetCrypto(opt)
+		if err != nil {
+			return false, err
+		}
+		return cryptoCon.Verify(opt, sig, digest, from)
 	default:
-		return false, fmt.Errorf("wront algorithm type")
+		return false, fmt.Errorf("wrong algorithm type")
 	}
 }
 
@@ -216,6 +279,12 @@ func RestorePrivateKey(keyFilePath, password string) (crypto.PrivateKey, error) 
 		return ecdsa.UnmarshalPrivateKey(rawBytes, keyStore.Type)
 	case crypto.Ed25519, crypto.RSA:
 		return nil, fmt.Errorf("don't support this private key")
+	case crypto.SM2:
+		cryptoCon, err := GetCrypto(keyStore.Type)
+		if err != nil {
+			return nil, err
+		}
+		return cryptoCon.UnmarshalPrivateKey(rawBytes, keyStore.Type)
 	default:
 		return nil, fmt.Errorf("don't support this private key")
 	}
