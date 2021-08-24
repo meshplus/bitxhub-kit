@@ -22,6 +22,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
+	"math/big"
 
 	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa/secp256k1"
 )
@@ -83,4 +84,30 @@ func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
 // S256 returns an instance of the secp256k1 curve.
 func S256() elliptic.Curve {
 	return secp256k1.S256()
+}
+
+func RecoverPlain(hash []byte, R, S, Vb *big.Int, homestead bool) ([]byte, error) {
+	if Vb.BitLen() > 8 {
+		return nil, fmt.Errorf("invalid signature")
+	}
+	V := byte(Vb.Uint64() - 27)
+	if !ValidateSignatureValues(V, R, S, homestead) {
+		return nil, fmt.Errorf("invalid signature")
+	}
+	// encode the signature in uncompressed format
+	r, s := R.Bytes(), S.Bytes()
+	sig := make([]byte, SignatureLength)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = V
+	// recover the public key from the signature
+	pub, err := Ecrecover(hash, sig)
+	if err != nil {
+		return nil, err
+	}
+	if len(pub) == 0 || pub[0] != 4 {
+		return nil, fmt.Errorf("invalid public key")
+	}
+
+	return Keccak256(pub[1:])[12:], nil
 }
