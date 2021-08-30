@@ -63,6 +63,24 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	}
 }
 
+//SupportedKeyType: check if configuration algorithm supported in bitxhub
+func SupportedKeyType(typ crypto.KeyType) bool {
+	if typ == crypto.ECDSA_P256 ||
+		typ == crypto.ECDSA_P384 ||
+		typ == crypto.ECDSA_P521 ||
+		typ == crypto.Secp256k1 {
+		return true
+	} else if typ == crypto.SM2 {
+		_, ok := CryptoM[typ]
+		if !ok {
+			return false
+		}
+		return true
+	}
+
+	return false
+}
+
 // Sign signs digest using key k and add key type flag in the beginning.
 func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
 	if privKey == nil {
@@ -70,6 +88,10 @@ func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
 	}
 
 	typ := privKey.Type()
+
+	if !SupportedKeyType(typ) {
+		return nil, fmt.Errorf("key type %d is not supported", typ)
+	}
 
 	sig, err := privKey.Sign(digest)
 	if err != nil {
@@ -84,9 +106,11 @@ func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
 func VerifyWithType(sig, digest []byte, from types.Address) (bool, error) {
 	typ := crypto.KeyType(sig[0])
 
-	sign := sig[1:]
+	if !SupportedKeyType(typ) {
+		return false, fmt.Errorf("key type %d is not supported", typ)
+	}
 
-	return Verify(typ, sign, digest, from)
+	return Verify(typ, sig[1:], digest, from)
 }
 
 func Verify(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, error) {
