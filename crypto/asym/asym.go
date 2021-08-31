@@ -31,6 +31,10 @@ type Crypto struct {
 	UnmarshalPrivateKey CryptoUnmarshalPrivateKey
 }
 
+func init() {
+	supportCryptoTypeToName = DefaultKeyType()
+}
+
 func RegisterCrypto(typ crypto.KeyType, f CryptoConstructor, g CryptoVerify, k CryptoUnmarshalPrivateKey) {
 	CryptoM[typ].Constructor = f
 	CryptoM[typ].Verify = g
@@ -45,7 +49,14 @@ func GetCrypto(typ crypto.KeyType) (*Crypto, error) {
 	return con, nil
 }
 
+func DefaultKeyType() map[crypto.KeyType]string {
+	return map[crypto.KeyType]string{
+		crypto.Secp256k1: "Secp256k1",
+	}
+}
+
 func ConfiguredKeyType(algorithms []string) error {
+	supportCryptoTypeToName = make(map[crypto.KeyType]string)
 	for _, algorithm := range algorithms {
 		cryptoType, err := crypto.CryptoNameToType(algorithm)
 		if err != nil {
