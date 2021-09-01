@@ -50,9 +50,25 @@ func GetCrypto(typ crypto.KeyType) (*Crypto, error) {
 }
 
 func DefaultKeyType() map[crypto.KeyType]string {
-	return map[crypto.KeyType]string{
-		crypto.Secp256k1: "Secp256k1",
+	if _, ok := CryptoM[crypto.SM2]; ok {
+		return map[crypto.KeyType]string{
+			crypto.Secp256k1:  "Secp256k1",
+			crypto.ECDSA_P256: "ECDSA_P256",
+			crypto.ECDSA_P384: "ECDSA_P384",
+			crypto.ECDSA_P521: "ECDSA_P521",
+			crypto.SM2:        "SM2",
+		}
 	}
+	return map[crypto.KeyType]string{
+		crypto.Secp256k1:  "Secp256k1",
+		crypto.ECDSA_P256: "ECDSA_P256",
+		crypto.ECDSA_P384: "ECDSA_P384",
+		crypto.ECDSA_P521: "ECDSA_P521",
+	}
+}
+
+func GetConfiguredKeyType() map[crypto.KeyType]string {
+	return supportCryptoTypeToName
 }
 
 func ConfiguredKeyType(algorithms []string) error {
@@ -67,13 +83,6 @@ func ConfiguredKeyType(algorithms []string) error {
 		}
 		supportCryptoTypeToName[cryptoType] = algorithm
 	}
-
-	printType := "Supported crypto type:"
-	for _, name := range supportCryptoTypeToName {
-		printType = printType + fmt.Sprintf("%s ", name)
-	}
-	printType = printType + "\n"
-	fmt.Println(printType)
 
 	return nil
 }
@@ -113,6 +122,12 @@ func SupportedKeyType(typ crypto.KeyType) bool {
 	}
 
 	return false
+}
+
+func UpdateSupportKeyType() {
+	if _, ok := CryptoM[crypto.SM2]; ok {
+		supportCryptoTypeToName[crypto.SM2] = "SM2"
+	}
 }
 
 // Sign signs digest using key k and add key type flag in the beginning.
