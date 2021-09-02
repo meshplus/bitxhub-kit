@@ -31,10 +31,6 @@ type Crypto struct {
 	UnmarshalPrivateKey CryptoUnmarshalPrivateKey
 }
 
-func init() {
-	supportCryptoTypeToName = DefaultKeyType()
-}
-
 func RegisterCrypto(typ crypto.KeyType, f CryptoConstructor, g CryptoVerify, k CryptoUnmarshalPrivateKey) {
 	CryptoM[typ].Constructor = f
 	CryptoM[typ].Verify = g
@@ -49,7 +45,10 @@ func GetCrypto(typ crypto.KeyType) (*Crypto, error) {
 	return con, nil
 }
 
-func DefaultKeyType() map[crypto.KeyType]string {
+func SupportKeyType() map[crypto.KeyType]string {
+	if len(supportCryptoTypeToName) != 0 {
+		return supportCryptoTypeToName
+	}
 	if _, ok := CryptoM[crypto.SM2]; ok {
 		return map[crypto.KeyType]string{
 			crypto.Secp256k1:  "Secp256k1",
@@ -124,14 +123,10 @@ func SupportedKeyType(typ crypto.KeyType) bool {
 	return false
 }
 
-func UpdateSupportKeyType() {
-	if _, ok := CryptoM[crypto.SM2]; ok {
-		supportCryptoTypeToName[crypto.SM2] = "SM2"
-	}
-}
-
 // Sign signs digest using key k and add key type flag in the beginning.
 func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
+	supportCryptoTypeToName := SupportKeyType()
+
 	if privKey == nil {
 		return nil, fmt.Errorf("private key is empty")
 	}
@@ -153,6 +148,8 @@ func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
 }
 
 func VerifyWithType(sig, digest []byte, from types.Address) (bool, error) {
+	supportCryptoTypeToName := SupportKeyType()
+
 	typ := crypto.KeyType(sig[0])
 
 	if _, ok := supportCryptoTypeToName[typ]; !ok {
