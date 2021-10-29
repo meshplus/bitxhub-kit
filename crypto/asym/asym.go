@@ -20,6 +20,7 @@ import (
 )
 
 var CryptoM = make(map[crypto.KeyType]*Crypto)
+var supportCryptoTypeToName = make(map[crypto.KeyType]string)
 
 type CryptoConstructor func(opt crypto.KeyType) (crypto.PrivateKey, error)
 type CryptoVerify func(opt crypto.KeyType, sig, digest []byte, from types.Address) (bool, error)
@@ -42,6 +43,47 @@ func GetCrypto(typ crypto.KeyType) (*Crypto, error) {
 		return nil, fmt.Errorf("the algorithm is unsupported")
 	}
 	return con, nil
+}
+
+func SupportKeyType() map[crypto.KeyType]string {
+	if len(supportCryptoTypeToName) != 0 {
+		return supportCryptoTypeToName
+	}
+	if _, ok := CryptoM[crypto.SM2]; ok {
+		return map[crypto.KeyType]string{
+			crypto.Secp256k1:  "Secp256k1",
+			crypto.ECDSA_P256: "ECDSA_P256",
+			crypto.ECDSA_P384: "ECDSA_P384",
+			crypto.ECDSA_P521: "ECDSA_P521",
+			crypto.SM2:        "SM2",
+		}
+	}
+	return map[crypto.KeyType]string{
+		crypto.Secp256k1:  "Secp256k1",
+		crypto.ECDSA_P256: "ECDSA_P256",
+		crypto.ECDSA_P384: "ECDSA_P384",
+		crypto.ECDSA_P521: "ECDSA_P521",
+	}
+}
+
+func GetConfiguredKeyType() map[crypto.KeyType]string {
+	return supportCryptoTypeToName
+}
+
+func ConfiguredKeyType(algorithms []string) error {
+	supportCryptoTypeToName = make(map[crypto.KeyType]string)
+	for _, algorithm := range algorithms {
+		cryptoType, err := crypto.CryptoNameToType(algorithm)
+		if err != nil {
+			return err
+		}
+		if !SupportedKeyType(cryptoType) {
+			return fmt.Errorf("unsupport algorithm:%s", algorithm)
+		}
+		supportCryptoTypeToName[cryptoType] = algorithm
+	}
+
+	return nil
 }
 
 func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
@@ -83,13 +125,15 @@ func SupportedKeyType(typ crypto.KeyType) bool {
 
 // Sign signs digest using key k and add key type flag in the beginning.
 func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
+	supportCryptoTypeToName := SupportKeyType()
+
 	if privKey == nil {
 		return nil, fmt.Errorf("private key is empty")
 	}
 
 	typ := privKey.Type()
 
-	if !SupportedKeyType(typ) {
+	if _, ok := supportCryptoTypeToName[typ]; !ok {
 		return nil, fmt.Errorf("key type %d is not supported", typ)
 	}
 
@@ -104,9 +148,11 @@ func SignWithType(privKey crypto.PrivateKey, digest []byte) ([]byte, error) {
 }
 
 func VerifyWithType(sig, digest []byte, from types.Address) (bool, error) {
+	supportCryptoTypeToName := SupportKeyType()
+
 	typ := crypto.KeyType(sig[0])
 
-	if !SupportedKeyType(typ) {
+	if _, ok := supportCryptoTypeToName[typ]; !ok {
 		return false, fmt.Errorf("key type %d is not supported", typ)
 	}
 
