@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/meshplus/bitxhub-kit/log"
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
@@ -21,7 +21,7 @@ type Consumer struct {
 	exchange     string
 	exchangeType string
 	routingKey   string
-	logger       *logrus.Entry
+	logger       hclog.Logger
 	conn         *amqp.Connection
 	channel      *amqp.Channel
 	tag          string
@@ -127,7 +127,7 @@ func (c *Consumer) handle(deliveries <-chan amqp.Delivery) {
 		c.msgH.HandleMessage(d.Body)
 		err := d.Ack(false)
 		if err != nil {
-			c.logger.Errorf("delivery ack: %s", err)
+			c.logger.Error("delivery ack: %s", err)
 		}
 	}
 

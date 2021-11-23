@@ -2,8 +2,7 @@ package mq
 
 import (
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	"github.com/hashicorp/go-hclog"
 )
 
 type Config struct {
@@ -12,7 +11,7 @@ type Config struct {
 	exchangeType string
 	queueName    string
 	routingKey   string
-	logger       *logrus.Entry
+	logger       hclog.Logger
 	handler      MessageHandler
 }
 
@@ -48,7 +47,7 @@ func WithHandler(h MessageHandler) Option {
 	}
 }
 
-func WithLogger(logger *logrus.Entry) Option {
+func WithLogger(logger hclog.Logger) Option {
 	return func(config *Config) {
 		config.logger = logger
 	}
