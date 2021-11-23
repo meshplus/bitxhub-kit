@@ -74,6 +74,7 @@ func (c *Consumer) setup() error {
 
 	c.conn, err = amqp.Dial(c.uri)
 	if err != nil {
+		c.logger.Error("amqp dial: %w", err)
 		return fmt.Errorf("amqp dial: %w", err)
 	}
 
@@ -83,6 +84,7 @@ func (c *Consumer) setup() error {
 
 	c.channel, err = c.conn.Channel()
 	if err != nil {
+		c.logger.Error("create channel error: %w", err)
 		return fmt.Errorf("create channel error: %w", err)
 	}
 
@@ -94,6 +96,7 @@ func (c *Consumer) setup() error {
 	if err != nil {
 		return fmt.Errorf("queue declare: %w", err)
 	}
+	c.logger.Info("MQ queue started:", queue.Name)
 
 	if err = c.channel.QueueBind(queue.Name, c.routingKey, c.exchange, false, nil); err != nil {
 		return fmt.Errorf("queue bind: %w", err)
@@ -103,6 +106,7 @@ func (c *Consumer) setup() error {
 	if err != nil {
 		return fmt.Errorf("queue consume: %w", err)
 	}
+	c.logger.Info("MQ queue deliveries:", len(deliveries))
 
 	go c.handle(deliveries)
 
