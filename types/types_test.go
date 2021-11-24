@@ -118,16 +118,18 @@ func TestIsValidAddressByte(t *testing.T) {
 	require.Equal(t, true, IsValidAddressByte([]byte(formalAccount)))
 }
 
-func TestBloom_MarshalTo(t *testing.T) {
-	bloom0 := Bloom{0, 1, 1}
+func TestBloom(t *testing.T) {
+	var bin Bloom
+	bin.Add([]byte(hash0))
+	ok := bin.Test([]byte(hash0))
+	require.True(t, ok)
 
-	data, err := bloom0.MarshalJSON()
-	require.Nil(t, err)
+	var bin1 Bloom
+	bin1.Add([]byte(formalHash))
+	ok = bin1.Test([]byte(formalHash))
+	require.True(t, ok)
 
-	var bloom1 Bloom
-
-	err = bloom1.UnmarshalJSON(data)
-	require.Nil(t, err)
-
-	require.Equal(t, bloom0, bloom1)
+	bin.OrBloom(&bin1)
+	ok = bin.Test([]byte(formalHash))
+	require.True(t, ok)
 }
