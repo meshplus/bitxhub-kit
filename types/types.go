@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"math/big"
 	"sync"
 
 	mt "github.com/cbergoon/merkletree"
@@ -414,4 +415,21 @@ func bloomValues(data []byte, hashbuf []byte) (uint, byte, uint, byte, uint, byt
 	i3 := BloomByteLength - uint((binary.BigEndian.Uint16(hashbuf[4:])&0x7ff)>>3) - 1
 
 	return i1, v1, i2, v2, i3, v3
+}
+
+// OrBloom executes an Or operation on the bloom
+func (b *Bloom) OrBloom(bl *Bloom) {
+	bin := new(big.Int).SetBytes(b[:])
+	input := new(big.Int).SetBytes(bl[:])
+	bin.Or(bin, input)
+	b.SetBytes(bin.Bytes())
+}
+
+// SetBytes sets the content of b to the given bytes.
+// It panics if d is not of suitable size.
+func (b *Bloom) SetBytes(d []byte) {
+	if len(b) < len(d) {
+		panic(fmt.Sprintf("bloom bytes too big %d %d", len(b), len(d)))
+	}
+	copy(b[BloomByteLength-len(d):], d)
 }
