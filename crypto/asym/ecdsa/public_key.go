@@ -7,6 +7,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/types"
 )
@@ -19,7 +20,7 @@ type PublicKey struct {
 
 func NewPublicKey(k ecdsa.PublicKey) (*PublicKey, error) {
 	switch k.Curve {
-	case elliptic.P256(), elliptic.P384(), elliptic.P521(), S256():
+	case elliptic.P256(), elliptic.P384(), elliptic.P521(), S256(), btcec.S256():
 		break
 	default:
 		return nil, fmt.Errorf("unsupported ecdsa curve option")
@@ -119,7 +120,7 @@ func (pub *PublicKey) Type() crypto.KeyType {
 		return crypto.ECDSA_P384
 	case elliptic.P521():
 		return crypto.ECDSA_P521
-	case S256():
+	case S256(), btcec.S256():
 		return crypto.Secp256k1
 	}
 	return -1
