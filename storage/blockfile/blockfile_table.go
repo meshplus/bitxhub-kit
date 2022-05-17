@@ -346,6 +346,27 @@ func (b *BlockTable) Append(item uint64, blob []byte) error {
 	_, _ = b.index.Write(idx.marshallBinary())
 
 	atomic.AddUint64(&b.items, 1)
+
+	errCh := make(chan error)
+	go func() {
+		if b.headId < 2 {
+			errCh <- nil
+			return
+		}
+		err := b.delOldFile(b.headId - 2)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -441,6 +462,26 @@ func (b *BlockTable) releaseFile(num uint32) {
 		delete(b.files, num)
 		f.Close()
 	}
+}
+
+func (b *BlockTable) delOldFile(num uint32) error {
+	name := fmt.Sprintf("%s.%04d.rdat", b.name, num)
+	if f, exist := b.files[num]; exist {
+		delete(b.files, num)
+		err := f.Close()
+		if err != nil {
+			return err
+		}
+		err = os.Remove(filepath.Join(b.path, name))
+		if err != nil {
+			return fmt.Errorf("remove %s file err:%s", name, err)
+		}
+		b.logger.WithField("name", name).Debug("file successfully removed from storage")
+
+	} else {
+		b.logger.WithField("name", name).Debug("file had been removed")
+	}
+	return nil
 }
 
 func truncateBlockFile(file *os.File, size int64) error {
