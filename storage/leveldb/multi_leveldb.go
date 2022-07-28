@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/meshplus/bitxhub-kit/storage"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -93,14 +93,12 @@ func (l *multiLdb) addTopLayer(curLayerCnt int) {
 		return
 	}
 
-	st := time.Now()
 	// 新增一层leveldb
 	index := len(l.dbList) // 新增leveldb的index
 	db, err := leveldb.OpenFile(path.Join(l.dirPath, fmt.Sprintf("/%d", index)), l.opt)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("new leveldb elapse: %s\n", time.Since(st))
 
 	// 新增的leveldb添加到dbList最后
 	l.dbList = append(l.dbList, db)
@@ -115,20 +113,65 @@ func (l *multiLdb) checkTopLayerSize() {
 
 	// 如果最上层leveldb大小超过阈值，则新增一层
 	if stats.LevelSizes.Sum() > l.sizeThreshold {
-		fmt.Println("exceed size threshold")
 		go l.addTopLayer(len(l.dbList))
 	}
 }
 
-// iterator 将各层iterator拼接，可能会存在重复的key，新值在前，旧值在后
+type KeyValueEntry struct {
+	key, value []byte
+}
+
+type myArray struct {
+	entries []KeyValueEntry
+	bytes   int
+	cmp     comparer.Comparer
+}
+
+func (a *myArray) Len() int {
+	return len(a.entries)
+}
+
+func (a *myArray) Search(key []byte) int {
+	return sort.Search(a.Len(), func(i int) bool {
+		k, _ := a.Index(i)
+		return a.cmp.Compare(k, key) >= 0
+	})
+}
+
+func (a *myArray) Index(i int) (key, value []byte) {
+	if i < 0 || i >= len(a.entries) {
+		panic(fmt.Sprintf("Index #%d: out of range", i))
+	}
+	return a.entries[i].key, a.entries[i].value
+}
+
+func (a *myArray) Put(key, value []byte) {
+	a.entries = append(a.entries, KeyValueEntry{key, value})
+	a.bytes += len(key) + len(value)
+}
+
+// iterator 筛选各层符合条件的key-value，形成迭代器返回。对于同一个key，只返回最新值
 func (l *multiLdb) iterator(rg *util.Range) storage.Iterator {
-	its := make([]iterator.Iterator, 0)
+	arr := &myArray{cmp: l.opt.GetComparer()}
+	m := make(map[string]bool)
+	// 从上层往下遍历，对于同一个key，新值在上层，旧值在下层
 	for _, db := range l.getLayers() {
 		it := db.NewIterator(rg, nil)
-		its = append(its, it)
+		for it.Next() {
+			// 遍历当前层符合条件的值，若key第一次出现，则将key-value添加到arr中（只取key的最新值）
+			if _, ok := m[string(it.Key())]; !ok {
+				// it.Key()返回引用，需将值拷贝到另一处，再添加到arr中
+				key := make([]byte, len(it.Key()))
+				val := make([]byte, len(it.Value()))
+				copy(key, it.Key())
+				copy(val, it.Value())
+				m[string(key)] = true
+				arr.Put(key, val)
+			}
+		}
 	}
 
-	return &iter{iter: iterator.NewMergedIterator(its, l.opt.GetComparer(), true)}
+	return &iter{iter: iterator.NewArrayIterator(arr)}
 }
 
 // Put 只写入最上层
@@ -168,7 +211,6 @@ func (l *multiLdb) Has(key []byte) bool {
 	return l.Get(key) != nil
 }
 
-// Iterator 可能会存在重复的key，新值在前，旧值在后
 func (l *multiLdb) Iterator(start, end []byte) storage.Iterator {
 	return l.iterator(&util.Range{
 		Start: start,
@@ -176,7 +218,6 @@ func (l *multiLdb) Iterator(start, end []byte) storage.Iterator {
 	})
 }
 
-// Prefix 可能会存在重复的key，新值在前，旧值在后
 func (l *multiLdb) Prefix(prefix []byte) storage.Iterator {
 	return l.iterator(util.BytesPrefix(prefix))
 }

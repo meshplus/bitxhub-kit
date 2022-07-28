@@ -78,6 +78,10 @@ func TestMultiLdb_Get(t *testing.T) {
 		mLdb.Put([]byte(fmt.Sprintf("%d", i)), []byte("0123456789ABCDEF"))
 	}
 	assert.Equal(t, []byte("0123456789ABCDEF"), mLdb.Get([]byte("key1")))
+
+	// 读修改后的新值
+	mLdb.Put([]byte("key1"), []byte("0123456789"))
+	assert.Equal(t, []byte("0123456789"), mLdb.Get([]byte("key1")))
 }
 
 func TestMultiLdb_Delete(t *testing.T) {
@@ -117,14 +121,23 @@ func TestMultiLdb_Iterator(t *testing.T) {
 	}
 	mLdb.Put([]byte("key"), []byte("0123456789")) // 写入最上层
 
-	// 迭代器中同一个key可能会出现重复的值，且新值在前
+	// 对同一个key，迭代器中只存在最新值
 	it := mLdb.Iterator([]byte("key"), []byte("kez"))
 	it.Next()
 	assert.Equal(t, []byte("key"), it.Key())
 	assert.Equal(t, []byte("0123456789"), it.Value())
-	it.Next()
-	assert.Equal(t, []byte("key"), it.Key())
-	assert.Equal(t, []byte("0123456789ABCDEF"), it.Value())
+	assert.Equal(t, false, it.Next())
+
+	// 范围匹配
+	for i := 0; i < 3; i++ {
+		mLdb.Put([]byte(fmt.Sprintf("key%d", i)), []byte("0123456789ABCDEF"))
+	}
+	it = mLdb.Iterator([]byte("key0"), []byte("key3"))
+	for i := 0; i < 3; i++ {
+		it.Next()
+		assert.Equal(t, []byte(fmt.Sprintf("key%d", i)), it.Key())
+		assert.Equal(t, []byte("0123456789ABCDEF"), it.Value())
+	}
 }
 
 func TestMultiLdbBatch_Commit(t *testing.T) {
