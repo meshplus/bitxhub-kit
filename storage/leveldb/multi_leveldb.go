@@ -136,8 +136,8 @@ func (l *multiLdb) checkTopLayerSize() error {
 	return nil
 }
 
-// GetStatesPerLayer 获取每层leveldb的状态，最上层leveldb在最前面
-func (l *multiLdb) GetStatesPerLayer() ([]*leveldb.DBStats, error) {
+// GetStats 获取每层leveldb的状态，最上层leveldb在最前面
+func (l *multiLdb) GetStats() (interface{}, error) {
 	statesList := make([]*leveldb.DBStats, 0)
 	for _, db := range l.getLayers() {
 		stats := &leveldb.DBStats{}

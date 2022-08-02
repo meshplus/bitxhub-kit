@@ -88,6 +88,14 @@ func (l *ldb) Close() error {
 	return l.db.Close()
 }
 
+func (l *ldb) GetStats() (interface{}, error) {
+	stats := &leveldb.DBStats{}
+	if err := l.db.Stats(stats); err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
+
 type ldbBatch struct {
 	ldb   *leveldb.DB
 	batch *leveldb.Batch
