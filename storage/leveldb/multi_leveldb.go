@@ -17,14 +17,14 @@ import (
 )
 
 const (
-	layerNamePrefix = "leveldb" // 每层leveldb目录名称的前缀
+	layerNamePrefix = "leveldb" // the prefix of leveldb name at each layer
 )
 
 type multiLdb struct {
-	dbList        []*leveldb.DB // 第i个为第i层(i>=0)，最后一个为最上层
-	dirPath       string        // 数据库文件所在目录的路径
-	sizeThreshold int64         // 每层leveldb的大小阈值（字节为单位）
-	opt           *opt.Options  // leveldb初始化参数
+	dbList        []*leveldb.DB // the i-th db is i-th layer, the last db is top layer, the first db (0-th db) is top layer
+	path          string        // the path of multi-leveldb
+	sizeThreshold int64         // the threshold of size for each layer leveldb (Byte)
+	opt           *opt.Options  // option of each layer leveldb
 	mu            sync.Mutex
 }
 
@@ -38,30 +38,34 @@ func NewMultiLdb(dirPath string, opt *opt.Options, sizeThreshold int64) (storage
 
 	mLdb := &multiLdb{
 		dbList:        make([]*leveldb.DB, 0),
-		dirPath:       dirPath,
+		path:          dirPath,
 		sizeThreshold: sizeThreshold,
 		opt:           opt,
 	}
 
-	// 如果路径下没有文件，新增第0层leveldb
+	// if it's empty under path, create 0-th layer leveldb
 	if len(fList) == 0 {
-		if err := mLdb.addTopLayer(0); err != nil {
+		db, err := leveldb.OpenFile(mLdb.getLayerPath(0), mLdb.opt)
+		if err != nil {
 			return nil, err
 		}
+		mLdb.dbList = append(mLdb.dbList, db)
 		return mLdb, nil
 	}
 
-	// 如果路径下有文件，依次连接各层leveldb
+	// if it's not empty, connect exist each layer leveldb sequentially
 	sort.Slice(fList, func(i, j int) bool {
-		// 先按照长度排序，再按字典序排序
+		// sort by length firstly
 		return len(fList[i]) < len(fList[j]) || (len(fList[i]) == len(fList[j]) && fList[i] < fList[j])
 	})
-	// 从 0 到 len(fList)-1 依次启动各层leveldb。若文件顺序不匹配，返回错误
 	for i := 0; i < len(fList); i++ {
+		// if dir name is incorrect, return error
+		// e.g. '/leveldb0' <-> 0-th layer leveldb,  '/leveldb1' <-> 1-th layer leveldb
 		if fList[i] != mLdb.getLayerPath(i) {
 			return nil, fmt.Errorf("missing file or filename error under %s: expect %s, get %s",
-				dirPath, mLdb.getLayerPath(i), fList[i])
+				mLdb.path, mLdb.getLayerPath(i), fList[i])
 		}
+		// connect i-th layer leveldb
 		db, err := leveldb.OpenFile(mLdb.getLayerPath(i), opt)
 		if err != nil {
 			return nil, err
@@ -72,21 +76,22 @@ func NewMultiLdb(dirPath string, opt *opt.Options, sizeThreshold int64) (storage
 	return mLdb, nil
 }
 
-// getLayerPath 获取第i层leveldb的路径
+// getLayerPath get path of i-th layer leveldb
 func (l *multiLdb) getLayerPath(i int) string {
-	return path.Join(l.dirPath, fmt.Sprintf("/%s%d", layerNamePrefix, i))
+	return path.Join(l.path, fmt.Sprintf("/%s%d", layerNamePrefix, i))
 }
 
-// getLayers 获取各层leveldb，从最上层往下层排序（dbList最后一个元素为最上层，第一个元素为最下层）
+// getLayers get layers in order from top to bottom
 func (l *multiLdb) getLayers() []*leveldb.DB {
 	layers := make([]*leveldb.DB, 0)
+	// the last db in l.dbList is top layer leveldb, the first db (0-th db) is bottom layer
 	for i := len(l.dbList) - 1; i >= 0; i-- {
 		layers = append(layers, l.dbList[i])
 	}
 	return layers
 }
 
-// getTopLayer 获取最上层leveldb
+// getTopLayer get top layer leveldb
 func (l *multiLdb) getTopLayer() (*leveldb.DB, error) {
 	if len(l.dbList) == 0 {
 		return nil, fmt.Errorf("dbList length is 0")
@@ -94,30 +99,29 @@ func (l *multiLdb) getTopLayer() (*leveldb.DB, error) {
 	return l.dbList[len(l.dbList)-1], nil
 }
 
-// addTopLayer 新增一层leveldb作为最上层，需传入当前层数
+// addTopLayer add new leveldb as top layer
 func (l *multiLdb) addTopLayer(curLayerCnt int) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	// 多个线程同时调用 addTopLayer 时，只允许一个成功
+	// when several goroutine call addTopLayer, only one goroutine can success
 	if len(l.dbList) > curLayerCnt {
 		return nil
 	}
 
-	// 新增一层leveldb
-	index := len(l.dbList) // 新leveldb的index
-	db, err := leveldb.OpenFile(l.getLayerPath(index), l.opt)
+	// create new leveldb, len(l.dbList) is the index of new leveldb
+	db, err := leveldb.OpenFile(l.getLayerPath(len(l.dbList)), l.opt)
 	if err != nil {
 		return err
 	}
 
-	// 新增的leveldb添加到dbList最后
+	// append new leveldb to l.dbList, then it becomes the top layer
 	l.dbList = append(l.dbList, db)
 
 	return nil
 }
 
-// checkTopLayerSize 检查最上层leveldb的大小
+// checkTopLayerSize check the size of top layer leveldb
 func (l *multiLdb) checkTopLayerSize() error {
 	db, err := l.getTopLayer()
 	if err != nil {
@@ -128,7 +132,7 @@ func (l *multiLdb) checkTopLayerSize() error {
 		return err
 	}
 
-	// 如果最上层leveldb大小超过阈值，则新增一层
+	// if size of top layer bigger than l.sizeThreshold, call addTopLayer
 	if stats.LevelSizes.Sum() > l.sizeThreshold {
 		go l.addTopLayer(len(l.dbList))
 	}
@@ -136,7 +140,7 @@ func (l *multiLdb) checkTopLayerSize() error {
 	return nil
 }
 
-// GetStats 获取每层leveldb的状态，最上层leveldb在最前面
+// GetStats get stats of each layer from top to bottom, return []*leveldb.DBStats
 func (l *multiLdb) GetStats() (interface{}, error) {
 	statesList := make([]*leveldb.DBStats, 0)
 	for _, db := range l.getLayers() {
@@ -153,7 +157,7 @@ type KeyValueEntry struct {
 	key, value []byte
 }
 
-// myArray 用于生成 Iterator
+// myArray use for iterator
 type myArray struct {
 	entries []KeyValueEntry
 	bytes   int
@@ -183,17 +187,17 @@ func (a *myArray) Put(key, value []byte) {
 	a.bytes += len(key) + len(value)
 }
 
-// iterator 筛选各层符合条件的key-value，形成迭代器返回。对于同一个key，只返回最新值
+// iterator merge iterator in each layer. For the same key, only the latest value is returned
 func (l *multiLdb) iterator(rg *util.Range) storage.Iterator {
 	arr := &myArray{cmp: l.opt.GetComparer()}
 	m := make(map[string]bool)
-	// 从上层往下遍历，对于同一个key，新值在上层，旧值在下层
+	// iterate from top to bottom. for the same key, the latest value is in higher layer
 	for _, db := range l.getLayers() {
 		it := db.NewIterator(rg, nil)
 		for it.Next() {
-			// 遍历当前层符合条件的值，若key第一次出现，则将key-value添加到arr中（只取key的最新值）
+			// if key appears for the first time, append key-value to arr
 			if _, ok := m[string(it.Key())]; !ok {
-				// it.Key()和it.Value()返回的是引用，需将值拷贝到另一处，再添加到arr中
+				// it.key() and it.value() return reference. copy firstly, then put to arr
 				key := make([]byte, len(it.Key()))
 				val := make([]byte, len(it.Value()))
 				copy(key, it.Key())
@@ -207,7 +211,7 @@ func (l *multiLdb) iterator(rg *util.Range) storage.Iterator {
 	return &iter{iter: iterator.NewArrayIterator(arr)}
 }
 
-// Put 只写入最上层
+// Put only put to top layer
 func (l *multiLdb) Put(key, value []byte) {
 	db, err := l.getTopLayer()
 	if err != nil {
@@ -223,7 +227,7 @@ func (l *multiLdb) Put(key, value []byte) {
 	}
 }
 
-// Delete 各层都需执行删除
+// Delete delete in each layer
 func (l *multiLdb) Delete(key []byte) {
 	for _, db := range l.getLayers() {
 		if err := db.Delete(key, nil); err != nil {
@@ -232,12 +236,12 @@ func (l *multiLdb) Delete(key []byte) {
 	}
 }
 
-// Get 从最上层往下查询，查到直接返回
+// Get get from top to bottom
 func (l *multiLdb) Get(key []byte) []byte {
 	for _, db := range l.getLayers() {
 		val, err := db.Get(key, nil)
 		if err == nil {
-			// 查到了直接返回
+			// if current layer get key, return
 			return val
 		} else if err != errors.ErrNotFound {
 			panic(err)
@@ -293,7 +297,7 @@ func (b *multiLdbBatch) Delete(key []byte) {
 }
 
 func (b *multiLdbBatch) Commit() {
-	// putBatch写入最上层
+	// putBatch write to top layer
 	db, err := b.mLdb.getTopLayer()
 	if err != nil {
 		panic(err)
@@ -302,7 +306,7 @@ func (b *multiLdbBatch) Commit() {
 		panic(err)
 	}
 
-	// delBatch写入每一层
+	// delBatch write to each layer
 	for _, db := range b.mLdb.getLayers() {
 		if err := db.Write(b.delBatch, nil); err != nil {
 			panic(err)
