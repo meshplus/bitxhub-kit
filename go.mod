@@ -23,7 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.7.2
-	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a
+	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tebeka/strftime v0.1.3 // indirect
 	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
