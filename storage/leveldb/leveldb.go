@@ -4,6 +4,7 @@ import (
 	"github.com/meshplus/bitxhub-kit/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -13,6 +14,17 @@ type ldb struct {
 
 func New(path string) (storage.Storage, error) {
 	db, err := leveldb.OpenFile(path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ldb{
+		db: db,
+	}, nil
+}
+
+func NewWithOpt(path string, opt *opt.Options) (storage.Storage, error) {
+	db, err := leveldb.OpenFile(path, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +86,14 @@ func (l *ldb) NewBatch() storage.Batch {
 
 func (l *ldb) Close() error {
 	return l.db.Close()
+}
+
+func (l *ldb) GetStats() (interface{}, error) {
+	stats := &leveldb.DBStats{}
+	if err := l.db.Stats(stats); err != nil {
+		return nil, err
+	}
+	return stats, nil
 }
 
 type ldbBatch struct {
