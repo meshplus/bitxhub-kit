@@ -290,7 +290,9 @@ func (b *BlockTable) Retrieve(item uint64) ([]byte, error) {
 		b.lock.RUnlock()
 		return nil, err
 	}
-	b.releaseFile(filenum)
+	if filenum != b.headId {
+		b.releaseFile(filenum)
+	}
 	b.lock.RUnlock()
 
 	return blob, nil
