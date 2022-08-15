@@ -280,16 +280,17 @@ func (b *BlockTable) Retrieve(item uint64) ([]byte, error) {
 		b.lock.RUnlock()
 		return nil, err
 	}
-	dataFile, exist := b.files[filenum]
-	if !exist {
+	dataFile, err := b.openFile(filenum, openBlockFileForReadOnly)
+	if err != nil {
 		b.lock.RUnlock()
-		return nil, fmt.Errorf("missing data file %d", filenum)
+		return nil, fmt.Errorf("open file %d err: %w", filenum, err)
 	}
 	blob := make([]byte, endOffset-startOffset)
 	if _, err := dataFile.ReadAt(blob, int64(startOffset)); err != nil {
 		b.lock.RUnlock()
 		return nil, err
 	}
+	b.releaseFile(filenum)
 	b.lock.RUnlock()
 
 	return blob, nil
@@ -318,12 +319,8 @@ func (b *BlockTable) Append(item uint64, blob []byte) error {
 			b.lock.Unlock()
 			return err
 		}
-		// Close old file, and reopen in RDONLY mode
+		// Close old file
 		b.releaseFile(b.headId)
-		_, err = b.openFile(b.headId, openBlockFileForReadOnly)
-		if err != nil {
-			return err
-		}
 
 		// Swap out the current head
 		b.head = newHead
