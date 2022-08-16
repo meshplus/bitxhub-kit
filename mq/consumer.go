@@ -48,6 +48,7 @@ func NewConsumer(opts ...Option) (*Consumer, error) {
 		close:        make(chan struct{}),
 		msgH:         config.handler,
 	}
+	logger.Info("CREATE CONSUMER", "URL", c.uri, "queueName", c.queueName, "exchange", c.exchange, "routingKey", c.routingKey)
 
 	return c, nil
 }
@@ -76,6 +77,7 @@ func (c *Consumer) setup() error {
 	if err != nil {
 		return fmt.Errorf("amqp dial: %w", err)
 	}
+	logger.Info("DIAL AMQP", "STATE", c.conn.ConnectionState())
 
 	go func() {
 		fmt.Printf("closing: %s", <-c.conn.NotifyClose(make(chan *amqp.Error)))
