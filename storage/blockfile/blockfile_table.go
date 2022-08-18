@@ -280,7 +280,10 @@ func (b *BlockTable) Retrieve(item uint64) ([]byte, error) {
 		b.lock.RUnlock()
 		return nil, err
 	}
-	dataFile, err := b.openFile(filenum, openBlockFileForReadOnly)
+	dataFile, err := openBlockFileForReadOnly(filepath.Join(b.path, fmt.Sprintf("%s.%04d.rdat", b.name, filenum)))
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		b.lock.RUnlock()
 		return nil, fmt.Errorf("open file %d err: %w", filenum, err)
@@ -291,7 +294,7 @@ func (b *BlockTable) Retrieve(item uint64) ([]byte, error) {
 		return nil, err
 	}
 	if filenum != b.headId {
-		b.releaseFile(filenum)
+		dataFile.Close()
 	}
 	b.lock.RUnlock()
 
