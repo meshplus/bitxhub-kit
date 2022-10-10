@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -13,6 +14,7 @@ type loggerContext struct {
 	loggers map[string]logrus.FieldLogger
 	config  *config
 	hooks   []logrus.Hook
+	lock    *sync.Mutex
 }
 
 var loggerCtx = defaultLoggerContext()
@@ -22,6 +24,7 @@ func defaultLoggerContext() *loggerContext {
 		loggers: make(map[string]logrus.FieldLogger),
 		config:  defaultConfig(),
 		hooks:   make([]logrus.Hook, 0),
+		lock:    &sync.Mutex{},
 	}
 }
 
@@ -44,7 +47,8 @@ func NewWithModule(name string) *logrus.Entry {
 	logger := New()
 
 	l := logger.WithField("module", name)
-
+	loggerCtx.lock.Lock()
+	defer loggerCtx.lock.Unlock()
 	loggerCtx.loggers[name] = l
 
 	return l
