@@ -273,6 +273,7 @@ func NewAddressByStr(s string) *Address {
 func NewHash(b []byte) *Hash {
 	a := &Hash{}
 	a.SetBytes(b)
+	a.Hash = a.String()
 	return a
 }
 
