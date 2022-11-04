@@ -257,6 +257,7 @@ func (a *Address) Set(other *Address) {
 func NewAddress(b []byte) *Address {
 	a := &Address{}
 	a.SetBytes(b)
+	a.Address = a.String()
 	return a
 }
 
