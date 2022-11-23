@@ -7,7 +7,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcec"
+	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/types"
 )
