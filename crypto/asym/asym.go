@@ -359,3 +359,44 @@ func RestorePrivateKey(keyFilePath, password string) (crypto.PrivateKey, error) 
 		return nil, fmt.Errorf("don't support this private key")
 	}
 }
+
+func GetPrivateKeyFromByte(privData []byte, password string) (crypto.PrivateKey, error) {
+
+	keyStore := &crypto.KeyStore{}
+	if err := json.Unmarshal(privData, keyStore); err != nil {
+		return nil, err
+	}
+
+	rawBytes, err := hex.DecodeString(keyStore.Cipher.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	if password != "" {
+		hash := sha256.Sum256([]byte(password))
+		aesKey, err := sym.GenerateSymKey(crypto.AES, hash[:])
+		if err != nil {
+			return nil, err
+		}
+
+		rawBytes, err = aesKey.Decrypt(rawBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	switch keyStore.Type {
+	case crypto.ECDSA_P256, crypto.ECDSA_P384, crypto.ECDSA_P521, crypto.Secp256k1:
+		return ecdsa.UnmarshalPrivateKey(rawBytes, keyStore.Type)
+	case crypto.Ed25519, crypto.RSA:
+		return nil, fmt.Errorf("don't support this private key")
+	case crypto.SM2:
+		cryptoCon, err := GetCrypto(keyStore.Type)
+		if err != nil {
+			return nil, err
+		}
+		return cryptoCon.UnmarshalPrivateKey(rawBytes, keyStore.Type)
+	default:
+		return nil, fmt.Errorf("don't support this private key")
+	}
+}
