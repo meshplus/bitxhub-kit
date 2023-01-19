@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+//go:build !nacl && !js && cgo
 // +build !nacl,!js,cgo
 
 package ecdsa
@@ -87,6 +88,9 @@ func S256() elliptic.Curve {
 }
 
 func RecoverPlain(hash []byte, R, S, Vb *big.Int, homestead bool) ([]byte, error) {
+	if R == nil || S == nil || Vb == nil {
+		return nil, fmt.Errorf("invalid signature")
+	}
 	if Vb.BitLen() > 8 {
 		return nil, fmt.Errorf("invalid signature")
 	}
