@@ -134,7 +134,12 @@ func (l *multiLdb) checkTopLayerSize() error {
 
 	// if size of top layer bigger than l.sizeThreshold, call addTopLayer
 	if stats.LevelSizes.Sum() > l.sizeThreshold {
-		go l.addTopLayer(len(l.dbList))
+		go func() {
+			err := l.addTopLayer(len(l.dbList))
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	return nil

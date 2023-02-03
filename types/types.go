@@ -246,9 +246,7 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 
 // Sets a to other
 func (a *Address) Set(other *Address) {
-	for i, v := range other.RawAddress {
-		a.RawAddress[i] = v
-	}
+	a.RawAddress = other.RawAddress
 	a.Address = ""
 }
 
@@ -405,7 +403,10 @@ func bloomValues(data []byte, hashbuf []byte) (uint, byte, uint, byte, uint, byt
 	sha := hasherPool.Get().(KeccakState)
 	sha.Reset()
 	sha.Write(data)
-	sha.Read(hashbuf)
+	_, err := sha.Read(hashbuf)
+	if err != nil {
+
+	}
 	hasherPool.Put(sha)
 	// The actual bits to flip
 	v1 := byte(1 << (hashbuf[1] & 0x7))

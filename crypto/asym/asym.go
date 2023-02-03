@@ -105,7 +105,7 @@ func GenerateKeyPair(opt crypto.KeyType) (crypto.PrivateKey, error) {
 	}
 }
 
-//SupportedKeyType: check if configuration algorithm supported in bitxhub
+// SupportedKeyType: check if configuration algorithm supported in bitxhub
 func SupportedKeyType(typ crypto.KeyType) bool {
 	if typ == crypto.ECDSA_P256 ||
 		typ == crypto.ECDSA_P384 ||
@@ -114,10 +114,7 @@ func SupportedKeyType(typ crypto.KeyType) bool {
 		return true
 	} else if typ == crypto.SM2 {
 		_, ok := CryptoM[typ]
-		if !ok {
-			return false
-		}
-		return true
+		return ok
 	}
 
 	return false

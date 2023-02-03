@@ -73,7 +73,10 @@ func Keccak256(data ...[]byte) []byte {
 	for _, b := range data {
 		d.Write(b)
 	}
-	d.Read(b)
+	_, err := d.Read(b)
+	if err != nil {
+		return b
+	}
 	return b
 }
 
