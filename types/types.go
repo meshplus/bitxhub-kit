@@ -403,10 +403,7 @@ func bloomValues(data []byte, hashbuf []byte) (uint, byte, uint, byte, uint, byt
 	sha := hasherPool.Get().(KeccakState)
 	sha.Reset()
 	sha.Write(data)
-	_, err := sha.Read(hashbuf)
-	if err != nil {
-
-	}
+	_, _ = sha.Read(hashbuf)
 	hasherPool.Put(sha)
 	// The actual bits to flip
 	v1 := byte(1 << (hashbuf[1] & 0x7))
