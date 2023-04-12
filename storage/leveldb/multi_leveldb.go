@@ -100,25 +100,23 @@ func (l *multiLdb) getTopLayer() (*leveldb.DB, error) {
 }
 
 // addTopLayer add new leveldb as top layer
-func (l *multiLdb) addTopLayer(curLayerCnt int) error {
+func (l *multiLdb) addTopLayer(curLayerCnt int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	// when several goroutine call addTopLayer, only one goroutine can success
 	if len(l.dbList) > curLayerCnt {
-		return nil
+		return
 	}
 
 	// create new leveldb, len(l.dbList) is the index of new leveldb
 	db, err := leveldb.OpenFile(l.getLayerPath(len(l.dbList)), l.opt)
 	if err != nil {
-		return err
+		return
 	}
 
 	// append new leveldb to l.dbList, then it becomes the top layer
 	l.dbList = append(l.dbList, db)
-
-	return nil
 }
 
 // checkTopLayerSize check the size of top layer leveldb
