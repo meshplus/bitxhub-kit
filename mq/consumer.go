@@ -110,6 +110,11 @@ func (c *Consumer) setup() error {
 }
 
 func (c *Consumer) Stop() error {
+	//Solve the error that the channel is empty when executing stop()
+	//directly after executing initialize().（start function not executed）
+	if c.channel == nil {
+		return nil
+	}
 	// will close() the deliveries channel
 	if err := c.channel.Cancel(c.tag, true); err != nil {
 		return fmt.Errorf("consumer cancel: %w", err)
