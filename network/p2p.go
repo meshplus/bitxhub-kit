@@ -44,8 +44,7 @@ func New(opts ...Option) (*P2P, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	h, err := libp2p.New(ctx,
-		libp2p.Identity(config.privKey),
+	h, err := libp2p.New(libp2p.Identity(config.privKey),
 		libp2p.ListenAddrStrings(config.localAddr))
 	if err != nil {
 		cancel()
